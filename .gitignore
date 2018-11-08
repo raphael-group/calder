@@ -1,0 +1,5 @@
+/out/*
+/.idea/*
+/src/META-INF/*
+tree*.txt
+CALDER_log.txt

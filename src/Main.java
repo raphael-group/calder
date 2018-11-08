@@ -1,5 +1,3 @@
-import sun.awt.image.ImageWatched;
-
 import java.io.*;
 import java.time.LocalTime;
 import java.util.LinkedList;
@@ -8,17 +6,22 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
-    public static String INFILE = "..\\Results\\CLL003_cl_readcounts.txt";
-    public static String OUTDIR = "..\\Output\\";
+    public static String INFILE = "CLL003_clustered.txt";
+    public static String OUTDIR = "";
     public static String LOGFILE = "CALDER_log.txt";
     public static int MAX_NUM_OPTIMA_OUTPUT = 20;
     public static boolean PRINT_CONFIDENCE_INTERVALS = false;
-    public static final int THREADS = 6;
+    public static final int THREADS = 1;
     public static double CONFIDENCE = .9;
     public static final double DETECTION_THRESHOLD_H = .01;
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) {
+        if (args.length > 0){
+            INFILE = args[0];
+        }
+
         // Set up CALDER
+        Calder.init();
 
         // Load data from file (TSV, basically AncesTree format)
         String fname = INFILE;
@@ -31,7 +34,12 @@ public class Main {
         }
 
         PrintStream origOut = System.out;
-        PrintStream logOut = new PrintStream(OUTDIR + LOGFILE);
+        PrintStream logOut = null;
+        try {
+            logOut = new PrintStream(OUTDIR + LOGFILE);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
         PrintStream dummy = new PrintStream(new OutputStream() {
             @Override
@@ -40,7 +48,6 @@ public class Main {
             }});
 
         int totalTrees;
-        int iter = 0;
         int discardedTrees = 0;
         LinkedList<Tree> maximalFTrees;
         int nFeasible, biggestTrees;
@@ -64,9 +71,6 @@ public class Main {
                 //LinkedList<SolveILPTask> tasks = new LinkedList<>();
                 coll = new ILPResultCollector(I);
 
-
-
-                Calder.init();
                 SolveILPTask task;
                 for (Tree T : maximalFTrees) {
                     task = new SolveILPTask(I, T, latch, coll);
@@ -107,7 +111,7 @@ public class Main {
                 if (c > MAX_NUM_OPTIMA_OUTPUT){
                     break;
                 }
-                PrintWriter writer = new PrintWriter(new File(OUTDIR + "\\tree" + c + ".txt"));
+                PrintWriter writer = new PrintWriter(new File(OUTDIR + "tree" + c + ".txt"));
                 writer.write(res.printConcise());
                 writer.close();
                 c++;

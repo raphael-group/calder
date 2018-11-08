@@ -1,16 +1,7 @@
 import net.sf.javailp.*;
 import net.sf.javailp.Result;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static java.lang.System.*;
 
 public class Calder {
 
