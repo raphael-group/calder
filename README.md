@@ -48,12 +48,12 @@ Stay tuned for additional scripts to visualize output.
 
 ### Command line options
 
-  -i,--input <arg>       input file path
-  -o,--output <arg>      output file path (default "CALDER_output.txt")
-  -t,--threads <arg>     number of threads (default 1)
-  -a,--alpha <arg>       confidence level alpha (default 0.9)
-  -h,--threshold <arg>   detection threshold h (default 0.01)
-  -n,--intervals         print confidence intervals (default false)
+    -i,--input <arg>       input file path
+    -o,--output <arg>      output file path (default "CALDER_output.txt")
+    -t,--threads <arg>     number of threads (default 1)
+    -a,--alpha <arg>       confidence level alpha (default 0.9)
+    -h,--threshold <arg>   detection threshold h (default 0.01)
+    -n,--intervals         print confidence intervals (default false)
   
 Additional information
 ----------------
