@@ -8,16 +8,16 @@ Setup
 The setup process for CALDER requires the following steps:
 
 ### Download
-Download CALDER.  The following command clones the current CALDER repository from GitHub:
+The following command clones the current CALDER repository from GitHub:
 
     git clone https://github.com/raphael-group/calder.git
 
 ### Requirements
-The following software is required for CALDER.
+The following software is required for CALDER:
 
 * Linux/Unix or Windows
 * [Java 8 Runtime Environment (JRE)](https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
-* [Gurobi optimizer version 8.0](http://www.gurobi.com/index)
+* [Gurobi optimizer](http://www.gurobi.com/index) version 8.0
 
 ### Testing
 With the dependencies set up correctly, the following command will run CALDER on the provided test input:
@@ -42,7 +42,7 @@ The input file is a tab-separated text file representing a matrix of read counts
 The command to run CALDER is simply "java -jar calder.jar" followed by command line arguments. The option -i to designate the input file is required.
 
 ### Output
-The main output of CALDER is a text file, CALDER_output.txt. By default, this file lists run details and, for each optimal solution, the Fhat, U, and tree, as well as the tmin and tmax values for each clone. See sample_output.txt for an example.
+The main output of CALDER is a text file, CALDER_output.txt. By default, this file lists run details and, for each optimal solution, the inferred frequency matrix F, usage matrix U (clone mixture proportions), and tree (represented as an adjacency list for each vertex), as well as the tmin and tmax values for each clone. See sample_output.txt for an example.
 
 Stay tuned for additional scripts to visualize output.
 
