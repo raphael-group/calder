@@ -1,7 +1,7 @@
 CALDER
 =======================
 
-CALDER (Cancer Analysis of Longitudinal Data through Evolutionary Reconstruction) is an algorithm for inferring evolutionary phylogenies using multiple longitudinal bulk DNA sequencing samples from the same patient. CALDER improves upon current methods by enforcing the evolutionary relationships that are expected between temporally ordered samples. 
+CALDER (Cancer Analysis of Longitudinal Data through Evolutionary Reconstruction) is an algorithm for inferring evolutionary phylogenies using multiple longitudinal bulk DNA sequencing samples from the same patient. CALDER improves upon previous methods by enforcing the evolutionary relationships that are expected between temporally ordered samples. 
 
 Setup
 ------------------------
@@ -17,7 +17,7 @@ The following software is required for CALDER.
 
 * Linux/Unix or Windows
 * [Java 8 Runtime Environment (JRE)](https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
-* [Gurobi optimizer](http://www.gurobi.com/index)
+* [Gurobi optimizer version 8.0](http://www.gurobi.com/index)
 
 ### Testing
 With the dependencies set up correctly, the following command will run CALDER on the provided test input:
@@ -42,7 +42,7 @@ The input file is a tab-separated text file representing a matrix of read counts
 The command to run CALDER is simply "java -jar calder.jar" followed by command line arguments. The option -i to designate the input file is required.
 
 ### Output
-The main output of CALDER is a text file, CALDER_output.txt by default, which lists some details about the CALDER results as well as, for each optimal solution, the Fhat, U, and tree, as well as the tmin and tmax values for each clone. See sample_output.txt for an example.
+The main output of CALDER is a text file, CALDER_output.txt. By default, this file lists run details and, for each optimal solution, the Fhat, U, and tree, as well as the tmin and tmax values for each clone. See sample_output.txt for an example.
 
 Stay tuned for additional scripts to visualize output.
 
