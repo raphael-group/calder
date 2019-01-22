@@ -1,3 +1,5 @@
+import org.apache.commons.cli.*;
+
 import java.io.*;
 import java.time.LocalTime;
 import java.util.LinkedList;
@@ -6,18 +8,95 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
-    public static String INFILE = "CLL003_clustered.txt";
+    public static String INFILE = null;
     public static String OUTDIR = "";
-    public static String LOGFILE = "CALDER_log.txt";
+
+    public static String OUTFILE = "CALDER_output.txt";
     public static int MAX_NUM_OPTIMA_OUTPUT = 20;
+
+    public static boolean PRINT_ANCESTRY_GRAPH = false;
     public static boolean PRINT_CONFIDENCE_INTERVALS = false;
-    public static final int THREADS = 1;
+    public static int THREADS = 3;
     public static double CONFIDENCE = .9;
-    public static final double DETECTION_THRESHOLD_H = .01;
+    public static double MINIMUM_USAGE_H = .01;
 
     public static void main(String[] args) {
-        if (args.length > 0){
-            INFILE = args[0];
+        Options options = new Options();
+        Option input = new Option("i", "input", true, "input file path");
+        input.setRequired(true);
+        options.addOption(input);
+
+        Option output = new Option("o", "output", true, "output file path");
+        output.setRequired(false);
+        options.addOption(output);
+
+        Option alpha = new Option("a", "alpha", true, "confidence level alpha (default 0.9)");
+        alpha.setRequired(false);
+        options.addOption(alpha);
+
+        Option threads = new Option("t", "threads", true, "number of threads (default 1)");
+        threads.setRequired(false);
+        options.addOption(threads);
+
+        Option detectionThreshold = new Option("h", "threshold", true, "detection threshold h (default 0.01)");
+        detectionThreshold.setRequired(false);
+        options.addOption(detectionThreshold);
+
+        Option printCI = new Option("n", "intervals", false, "print confidence intervals (default false)");
+        printCI.setRequired(false);
+        options.addOption(printCI);
+
+
+        // Option printGraph = new Option("g", "print-graph", false, "print confidence intervals (default false)");
+        //printGraph.setRequired(false);
+        //options.addOption(printGraph);
+
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd = null;
+
+        try{
+            cmd = parser.parse(options, args);
+        } catch (ParseException e){
+            System.out.println(e.getMessage());
+            formatter.printHelp("calder", options);
+
+            System.exit(1);
+        }
+
+        try {
+            INFILE = cmd.getOptionValue("input");
+            if (cmd.hasOption("output")){
+                OUTFILE = cmd.getOptionValue("output");
+            }
+            if (cmd.hasOption("threads")) {
+                THREADS = Integer.parseInt(cmd.getOptionValue("threads"));
+            }
+            if (cmd.hasOption("threshold")) {
+                MINIMUM_USAGE_H = Double.parseDouble(cmd.getOptionValue("threshold"));
+                if(MINIMUM_USAGE_H <= 0 || MINIMUM_USAGE_H >= 1){
+                    System.out.println("Minimum usage h must be in (0, 1)");
+                    System.exit(1);
+                }
+            }
+            if (cmd.hasOption("alpha")) {
+                CONFIDENCE = Double.parseDouble(cmd.getOptionValue("alpha"));
+                if(CONFIDENCE <= 0 || CONFIDENCE >= 1){
+                    System.out.println("Confidence level alpha must be in (0, 1)");
+                    System.exit(1);
+                }
+            }
+            if(cmd.hasOption("print-graph")){
+                PRINT_ANCESTRY_GRAPH = true;
+            }
+            if(cmd.hasOption("intervals")){
+                PRINT_CONFIDENCE_INTERVALS = true;
+            }
+        } catch(NumberFormatException e){
+            System.out.println(e.getMessage());
+            formatter.printHelp("calder", options);
+            System.exit(1);
         }
 
         // Set up CALDER
@@ -27,16 +106,14 @@ public class Main {
         String fname = INFILE;
         Instance I = Instance.fromFile(fname);
 
-        if(PRINT_CONFIDENCE_INTERVALS){
-            System.out.println(I);
-            System.out.println(I.intervals.length + " " + I.intervals[0].length + " " + I.intervals[0][0].length);
-            System.out.println(I.intervals.length + " " + I.intervals[1].length + " " + I.intervals[1][0].length);
-        }
 
+
+        PrintStream origErr = System.err;
         PrintStream origOut = System.out;
+
         PrintStream logOut = null;
         try {
-            logOut = new PrintStream(OUTDIR + LOGFILE);
+            logOut = new PrintStream(OUTDIR + OUTFILE);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -47,8 +124,14 @@ public class Main {
 
             }});
 
+        System.setOut(logOut);
+        if(PRINT_CONFIDENCE_INTERVALS){
+            System.out.println(I);
+        }
+
+
         int totalTrees;
-        int discardedTrees = 0;
+        int discardedTrees;
         LinkedList<Tree> maximalFTrees;
         int nFeasible, biggestTrees;
         ILPResultCollector coll;
@@ -58,8 +141,10 @@ public class Main {
         int doneSize = I.nMuts;
 
         System.setOut(dummy);
+        System.setErr(dummy);
 
         do {
+            discardedTrees = 0;
             trees = Calder.solveLVAFFP(I, doneSize);
             totalTrees = trees.size();
             do {
@@ -68,16 +153,17 @@ public class Main {
                 biggestTrees = maximalFTrees.size();
 
                 CountDownLatch latch = new CountDownLatch(maximalFTrees.size());
-                //LinkedList<SolveILPTask> tasks = new LinkedList<>();
+                LinkedList<SolveILPTask> tasks = new LinkedList<>();
                 coll = new ILPResultCollector(I);
 
                 SolveILPTask task;
                 for (Tree T : maximalFTrees) {
                     task = new SolveILPTask(I, T, latch, coll);
-                    //tasks.add(task);
+                    tasks.add(task);
                     pool.submit(task);
                     //task.run();
                 }
+
                 try {
                     latch.await();
                 } catch (InterruptedException e) {
@@ -89,19 +175,22 @@ public class Main {
                 nFeasible = coll.getNumFeasible();
             } while (nFeasible == 0 && maximalFTrees.size() > 0);
             Calder.resetCap();
+            doneSize = trees.get(0).vertices.size();
+            System.out.println("Found " + nFeasible + " feasible trees of size " + doneSize + " ================================");
             doneSize = trees.get(0).vertices.size() - 1;
         } while(nFeasible == 0 && doneSize > 0);
 
         System.setOut(logOut);
+        //System.setOut(origOut);
+        System.setErr(origErr);
 
         System.out.println("Trees of size " + trees.get(0).vertices.size() + " out of a possible " + I.normalReads[0].length);
         System.out.println("Found " + biggestTrees + " trees accounting for maximal frequency out of " + totalTrees + " total");
-        System.out.println("(discarded " + discardedTrees + " infeasible trees with higher frequencies)");
+        System.out.println("(discarded " + (discardedTrees - biggestTrees) + " infeasible trees with higher frequencies)");
+        System.out.println("Found " + coll.getNumFeasible() +  " feasible trees of " + biggestTrees);
         System.out.println("Found " + coll.getBestResultsSize() + " trees with optimal objective of " + coll.getBestScore());
         System.out.println("Printing individual solutions:");
         System.out.println(coll.printBestResults());
-
-
 
         //System.out.println(coll.printAllResults());
 

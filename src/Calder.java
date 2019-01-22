@@ -13,10 +13,12 @@ public class Calder {
     private static double cap = Double.MAX_VALUE;
 
     public static void init(){
-        factory = new SolverFactoryGLPK();
-        factory.setParameter(Solver.VERBOSE, 1);
+        factory = new SolverFactoryGurobi();
+        factory.setParameter(Solver.VERBOSE, 0);
         factory.setParameter(Solver.TIMEOUT, 30);
-        solver = factory.get();
+
+        MySolverGurobi.init(0, 30);
+
     }
 
     public static LinkedList<Tree> findBestMaximalTrees(Instance i, LinkedList<Tree> trees){
@@ -196,7 +198,7 @@ public class Calder {
                 linear.add(1, "uhat_" + t + "_" + i);
                 linear.add(-1, "y_" + t + "_" + i);
                 linear.add(1, "z_" + t + "_" + i);
-                problem.add(new Constraint(linear, ">=", Main.DETECTION_THRESHOLD_H - 1));
+                problem.add(new Constraint(linear, ">=", Main.MINIMUM_USAGE_H - 1));
             }
         }
 
@@ -280,12 +282,13 @@ public class Calder {
 
         try{
             solver = factory.get();
+            //solver = new MySolverGurobi(0, 30);
             Result result = solver.solve(problem);
 
 
             return new ILPResult(result, nClones, nSamples, indexToId, idToIndex, T, I.rowLabels, I.colLabels);
         } catch (AssertionError e){
-            System.err.println("Failed to find solution");
+            System.out.println("Failed to find solution");
             //TODO: return dummy ILPResult to avoid NullPointerException
             return null;
         }
@@ -512,12 +515,13 @@ public class Calder {
         //System.out.println(problem.getConstraints());
 
         try{
-            solver = factory.get();
+            //solver = factory.get();
+            solver = new MySolverGurobi();
             Result result = solver.solve(problem);
 
             return new ILPResult(result, nClones, nSamples, indexToId, idToIndex, T, I.rowLabels, I.colLabels);
         } catch (AssertionError e){
-            System.err.println("Failed to find solution");
+            System.out.println("Failed to find solution");
             //TODO: return dummy ILPResult
             return null;
         }
@@ -599,8 +603,8 @@ public class Calder {
                 // y = 0 -> u >= h
                 linear = new Linear();
                 linear.add(1, "uhat_" + t + "_" + i);
-                linear.add(DETECTION_THRESHOLD_H, "y_" + t + "_" + i);
-                problem.add(new Constraint(linear, ">=", DETECTION_THRESHOLD_H));
+                linear.add(MINIMUM_USAGE_H, "y_" + t + "_" + i);
+                problem.add(new Constraint(linear, ">=", MINIMUM_USAGE_H));
 
                 // y = 1 -> u <= 0
                 linear = new Linear();
@@ -638,7 +642,7 @@ public class Calder {
 
             return new ILPResult(result, nClones, nSamples, indexToId, idToIndex, T, I.rowLabels, I.colLabels);
         } catch (AssertionError e){
-            System.err.println("Failed to find solution");
+            System.out.println("Failed to find solution");
             return null;
         }
 
@@ -672,7 +676,7 @@ public class Calder {
             myMax = new double[m];
             for(int t = 0; t < m; t++){
                 myMin[t] = mins[t][i];
-                if (tmin < 0 && myMin[t] > Main.DETECTION_THRESHOLD_H){
+                if (tmin < 0 && myMin[t] > Main.MINIMUM_USAGE_H){
                     tmin = t;
                 }
                 myMax[t] = maxes[t][i];
@@ -681,11 +685,15 @@ public class Calder {
         }
 
         Graph G = Graph.buildAncestryGraph(mutations);
-        //TODO: add flag for printing ancestry graph
-        //System.out.println(G);
+        if(Main.PRINT_ANCESTRY_GRAPH){
+            System.out.println(G);
+        }
 
         GabowMyersEnum gm = new GabowMyersEnum(G, I.nSamples);
+        //GabowMyersMT gm = new GabowMyersMT(G, I.nSamples);
+
         return gm.run(doneSize);
+
     }
 
 

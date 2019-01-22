@@ -1,3 +1,5 @@
+import gurobi.GRBException;
+
 import java.util.concurrent.CountDownLatch;
 
 public class SolveILPTask implements Runnable{
@@ -17,16 +19,19 @@ public class SolveILPTask implements Runnable{
 
     @Override
     public void run() {
-        result = Calder.inferU(i, T);
-        if (result != null){
-            coll.addResult(result);
-        } else {
-            coll.addBadResult(T);
-            noHResult = Calder.inferUwithoutH(i, T);
-            if (noHResult != null)
-                coll.addNoHResult(noHResult);
-        }
-
+        try{
+            result = Calder.inferU(i, T);
+            if (result != null){
+                coll.addResult(result);
+            } else {
+                coll.addBadResult(T);
+                //noHResult = Calder.inferUwithoutH(i, T);
+                //if (noHResult != null)
+                    //coll.addNoHResult(noHResult);
+            }
+        } catch (Exception e){
+        } finally {
         latch.countDown();
+        }
     }
 }

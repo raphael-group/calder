@@ -120,7 +120,7 @@ public class Instance {
             result[1] = 1;
         }
         // If the lower end of the interval is sufficiently low, set it to 0 to allow for absence
-        if (result[0] < Main.DETECTION_THRESHOLD_H){
+        if (result[0] < Main.MINIMUM_USAGE_H){
             result[0] = 0;
         }
 
@@ -242,7 +242,7 @@ public class Instance {
 
 
             header = scanner.nextLine();
-            tokens = header.split("\t");
+            tokens = header.split("[\t ]");
 
             assert tokens.length % 2 == 1;
 
@@ -317,10 +317,11 @@ public class Instance {
     public String toString(){
         StringBuilder sb = new StringBuilder();
 
-        sb.append(Calder.print2DArray(normalReads, colLabels, rowLabels));
-        sb.append(Calder.print2DArray(variantReads, colLabels, rowLabels));
-        sb.append('\n');
+        //sb.append(Calder.print2DArray(normalReads, colLabels, rowLabels));
+        //sb.append(Calder.print2DArray(variantReads, colLabels, rowLabels));
+        sb.append("Interval lower bounds:\n");
         sb.append(Calder.print2DArray(intervals[0], colLabels, rowLabels));
+        sb.append("Interval upper bounds:\n");
         sb.append(Calder.print2DArray(intervals[1], colLabels, rowLabels));
 
 
