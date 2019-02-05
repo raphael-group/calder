@@ -62,4 +62,4 @@ Additional information
 See `LICENSE` for license information.
 
 ### Citation
-If you use CALDER in your work, please cite the following manuscript. (information to come)
+If you use CALDER in your work, please cite the following preprint: https://www.biorxiv.org/content/10.1101/526814v1.
