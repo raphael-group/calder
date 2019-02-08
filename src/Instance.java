@@ -7,13 +7,14 @@ import java.util.*;
 import static java.lang.System.exit;
 
 public class Instance {
-    final int[][] variantReads;
-    final int[][] normalReads;
+    private final int[][] variantReads;
+    private final int[][] normalReads;
     final double[][][] intervals;
     final String[] colLabels;
     final String[] rowLabels;
     final int nSamples;
     final int nMuts;
+    private boolean printedEffectiveConfidence = false;
 
     /*
     public Instance(int[][] normalReads, int[][] variantReads){
@@ -95,8 +96,11 @@ public class Instance {
         BetaDistribution b = new BetaDistribution(alpha, beta);
         double resultingConfidence = 1 - ((1 - Main.CONFIDENCE) / (double) denom);
 
-        //TODO: add flag for printing resulting confidence
-        //System.out.println(resultingConfidence);
+        // Print the effective confidence level if the flag is set
+        if(Main.PRINT_EFFECTIVE_CONFIDENCE && !printedEffectiveConfidence){
+            System.out.println("Effective confidence level: " + resultingConfidence);
+            printedEffectiveConfidence = true;
+        }
 
         double side = resultingConfidence / 2;
 
@@ -234,7 +238,7 @@ public class Instance {
         ArrayList<Integer> normalRow, variantRow;
         String tkn1 = "", tkn2 = "";
         int firstLength = -1;
-        int length, i, normalCount, variantCount;
+        int length, i;
         String header;
         File f = new File(filename);
         try (Scanner scanner = new Scanner(f)) {
@@ -320,9 +324,9 @@ public class Instance {
         //sb.append(Calder.print2DArray(normalReads, colLabels, rowLabels));
         //sb.append(Calder.print2DArray(variantReads, colLabels, rowLabels));
         sb.append("Interval lower bounds:\n");
-        sb.append(Calder.print2DArray(intervals[0], colLabels, rowLabels));
+        sb.append(Util.print2DArray(intervals[0], colLabels, rowLabels));
         sb.append("Interval upper bounds:\n");
-        sb.append(Calder.print2DArray(intervals[1], colLabels, rowLabels));
+        sb.append(Util.print2DArray(intervals[1], colLabels, rowLabels));
 
 
         return sb.toString();
