@@ -101,9 +101,6 @@ public class Main {
         }
         //System.out.println("Total q= " + total);
 
-        OUTDIR = INFILE.split()
-        System
-
         // Write output solution to file tree0
         int maximal = result.nClones;
         int c = 0;
