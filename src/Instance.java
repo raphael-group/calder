@@ -2,6 +2,7 @@ import org.apache.commons.math3.distribution.BetaDistribution;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
 import java.util.*;
 
 import static java.lang.System.exit;
@@ -77,8 +78,8 @@ public class Instance {
         for(i = 0; i < normalReads.length; i++){
             for(j = 0; j < normalReads[0].length; j++){
                 interval = computeBetaInterval(variantReads[i][j] + 1, normalReads[i][j] + 1);
-                mins[i][j] = interval[0];
-                maxes[i][j] = interval[1];
+                mins[i][j] = Math.floor(interval[0] * Math.pow(10, Main.PRECISION_DIGITS)) /  Math.pow(10, Main.PRECISION_DIGITS);
+                maxes[i][j] = Math.floor(interval[1] * Math.pow(10, Main.PRECISION_DIGITS)) /  Math.pow(10, Main.PRECISION_DIGITS);
             }
         }
 
@@ -98,7 +99,8 @@ public class Instance {
 
         // Print the effective confidence level if the flag is set
         if(Main.PRINT_EFFECTIVE_CONFIDENCE && !printedEffectiveConfidence){
-            System.out.println("Effective confidence level: " + resultingConfidence);
+            DecimalFormat df = new DecimalFormat("00.00");
+            System.out.println("Effective confidence level (after multiple hypothesis correction): " + df.format(100* resultingConfidence) + "%");
             printedEffectiveConfidence = true;
         }
 

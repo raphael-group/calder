@@ -2,34 +2,57 @@ import net.sf.javailp.Constraint;
 import net.sf.javailp.Result;
 
 import java.io.*;
-import java.math.BigDecimal;
-import java.time.LocalTime;
+import java.text.DecimalFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
+import java.util.Arrays;
 import java.util.LinkedList;
-
+import java.lang.management.*;
 
 public class Main {
     static String INFILE = null;
-    static String OUTDIR = "";
+    static String OUTDIR = "output/"; //TODO: change this back to empty by default
 
-    static String OUTFILE = "CALDER_output.txt";
-    static int MAX_NUM_OPTIMA_OUTPUT = 3;
+    static String OUTFILE = "log.txt";
+    static int MAX_NUM_OPTIMA_OUTPUT = 1;
 
-    // don't need this if using Gurobi - automatically uses all available processors
+    // don't need this if using Gurobi - automatically uses all detectable processors
     //public static int THREADS = 3;
+
     static double CONFIDENCE = .9;
     static double MINIMUM_USAGE_H = .01;
+    static double PRECISION_DIGITS = 6;
 
-    static boolean PRINT_ANCESTRY_GRAPH = false;
-    static boolean PRINT_CONFIDENCE_INTERVALS = false;
+    static boolean PRINT_ANCESTRY_GRAPH = true;
+    static boolean PRINT_CONFIDENCE_INTERVALS = true;
     static boolean PRINT_EFFECTIVE_CONFIDENCE = true;
 
     public static void main(String[] args) {
-        INFILE = "CLL003_clustered.txt";
+        Instant start = Instant.now();
+
+        //INFILE = "CLL003_clustered.txt";
 
         //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
 
+        //INFILE = "../Results/Data/CALDER format/eirew_a_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/eirew_b_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/eirew_494_readcounts.txt";
+
+        //INFILE = "../Results/Data/CALDER format/eirew_a_cl_readcounts.txt";
+
+        //INFILE = "../Results/Data/StJude/SJALL013787_cl_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/sim1_readcounts.txt";
+        INFILE = "../Results/Data/sim/instance0_cl_readcounts.txt";
+
+        System.out.println(Arrays.toString(args));
+
+        if(args.length > 0){
+            INFILE = args[0];
+        }
+        PRINT_ANCESTRY_GRAPH = false;
+        PRINT_CONFIDENCE_INTERVALS = false;
+        PRINT_EFFECTIVE_CONFIDENCE = false;
 
         //////////////////////////////////////////////////////////
         // Set up CALDER
@@ -73,12 +96,15 @@ public class Main {
         PrintStream origErr = System.err;
         PrintStream origOut = System.out;
 
+        //TODO: maybe uncomment and implement as option
+        /*
         PrintStream logOut = null;
         try {
             logOut = new PrintStream(OUTDIR + OUTFILE);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+        */
         //System.setOut(logOut);
         //System.setOut(dummy);
         //System.setErr(dummy);
@@ -90,23 +116,31 @@ public class Main {
 
         // construct an ILPResult object which unpacks the ILP variables
         ILPResult result = new ILPResult(r, I, G);
-        System.out.println(result);
-        System.out.println(result.totalPurity());
+        //System.out.println(result);
 
-        int total = 0;
-        for(int t = 0; t < I.nSamples; t++){
-            for(int i = 0; i < I.nMuts; i++){
-                total += (int) r.getPrimalValue("q_" + t + "_" + i);
+        int total = 1; // 1 edge incoming to root
+        for(int i = 0; i < I.nMuts; i++){
+            for(Integer j : G.outEdges.get(i)){
+                total += (int) r.getPrimalValue("x_" + i + "_" + j);
+                //System.out.println("x_" + i + "_" + j + " = " + r.getPrimalValue("x_" + i + "_" + j));
             }
         }
-        //System.out.println("Total q= " + total);
+        System.out.println("Total of " + total + " vertices included");
+        for(int i = 0; i < I.nMuts; i++){
+            //System.out.println("d_" + i + " = " + r.getPrimalValue("d_" + i));
+        }
+
+        String[] infile_tkns = INFILE.split("/");
+        String tkn = infile_tkns[infile_tkns.length - 1].split("\\.")[0].split("_")[0];
 
         // Write output solution to file tree0
         int maximal = result.nClones;
         int c = 0;
         try {
-            PrintWriter writer = new PrintWriter(new File(OUTDIR + "tree" + c + ".txt"));
-            writer.write(result + "");
+            PrintWriter writer = new PrintWriter(new File(OUTDIR + tkn + "_" + "tree" + c + ".txt"));
+            //writer.write(result.toString() + "");
+            writer.write(result.toStringConcise());
+            writer.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -116,14 +150,17 @@ public class Main {
         LinkedList<Constraint> extraConstraints = new LinkedList<>();
         while(c < MAX_NUM_OPTIMA_OUTPUT){
             // Add trivial restraint to
-            extraConstraints.add(Calder.constructDummyConstraint(result));
+            extraConstraints.add(Calder.constructDummyConstraint(result, c));
 
-            r = Calder.solve(I, G, extraConstraints);
+            r = Calder.solve(I, G, extraConstraints, true);
             if(r != null && (result = new ILPResult(r, I, G)).T.vertices.size() == maximal) {
                 System.out.println(result);
                 try {
-                    PrintWriter writer = new PrintWriter(new File(OUTDIR + "tree" + c + ".txt"));
-                    writer.write(result + "");
+
+                    PrintWriter writer = new PrintWriter(new File(OUTDIR + tkn + "_" + "tree" + c + ".txt"));
+                    //writer.write(result.toString() + "");
+                    writer.write(result.toStringConcise());
+                    writer.close();
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -134,6 +171,31 @@ public class Main {
             }
         }
 
+        ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+        DecimalFormat df = new DecimalFormat();
+        df.setMaximumFractionDigits(3);
+        Instant stop = Instant.now();
+        if(bean.isCurrentThreadCpuTimeSupported()){
+            long cpuTime = bean.getCurrentThreadCpuTime(); // system + user time
+            long userTime = bean.getCurrentThreadUserTime(); // user time
+            long systemTime = bean.getCurrentThreadCpuTime() - bean.getCurrentThreadUserTime();
+            System.out.println("wall: " + Duration.between(start, stop).getNano() / ((float) 1000000000)); // wall time
+            System.out.println("user: " + userTime / ((float) 1000000000));
+            System.out.println("system: " + systemTime / ((float) 1000000000));
+            MemoryMXBean membean =  ManagementFactory.getMemoryMXBean();
+            long mem = membean.getNonHeapMemoryUsage().getCommitted() + membean.getHeapMemoryUsage().getCommitted();
+
+            try {
+                PrintWriter writer = new PrintWriter(new File("time/" + tkn + ".txt"));
+                writer.write("wall: " + Duration.between(start, stop).getNano() / ((float) 1000000000) + "\n"); // wall time
+                writer.write("user: " + userTime / ((float) 1000000000) + "\n");
+                writer.write("system: " + systemTime / ((float) 1000000000) + "\n");
+                writer.write("memory: " + mem / ((float) 1000) + "\n");
+                writer.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 

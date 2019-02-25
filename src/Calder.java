@@ -13,23 +13,28 @@ public class Calder {
     public static void init(){
         factory = new SolverFactoryGurobi();
         factory.setParameter(Solver.VERBOSE, 0);
-        factory.setParameter(Solver.TIMEOUT, 30);
+        factory.setParameter(Solver.TIMEOUT, 36000);
 
         solver = factory.get();
 
     }
 
     public static Result solve(Instance I, Graph G){
-        return solve(I, G, new LinkedList<>());
+        return solve(I, G, new LinkedList<>(), true);
     }
 
-    public static Result solve(Instance I, Graph G,  List<Constraint> extraConstraints){
+    public static Result solveNonLongitudinal(Instance I, Graph G){
+        return solve(I, G, new LinkedList<>(), false);
+    }
+
+    public static Result solve(Instance I, Graph G,  List<Constraint> extraConstraints, boolean longitudinal){
         Problem problem = new Problem();
         int nClones = I.nMuts;
         int nSamples = I.nSamples;
-        int t, i, j, k;
+        int t, i, j, counter = 0;
         Linear linear;
 
+        // Add extra constraints (i.e. don't reproduce previous solutions)
         for(Constraint c : extraConstraints){
             problem.add(c);
         }
@@ -42,59 +47,58 @@ public class Calder {
 
         // Construct objective function
         setL0Norm(problem, I, G, nSamples, nClones);
+        //setDefaultObjective(problem, I, G, nSamples, nClones);
 
         // Define dummy product variable a_tij = fhat_tj * x_ij
         for(t = 0; t < nSamples; t++){
-            for (i = 0; i < nClones + 1; i++){
+            for (i = 0; i < nClones; i++){
                 for(Integer my_j : G.outEdges.get(i)){
                     linear = new Linear();
                     linear.add(1, "a_" + t + "_" + i + "_" + my_j);
                     linear.add(-1, "x_" + i + "_" + my_j);
-                    problem.add(new Constraint(linear, "<=", 0));
+                    problem.add(new Constraint("constraint" + counter++, linear, "<=", 0));
 
                     linear = new Linear();
                     linear.add(1, "a_" + t + "_" + i + "_" + my_j);
                     linear.add(-1, "fhat_" + t + "_" + my_j);
-                    problem.add(new Constraint(linear, "<=", 0));
+                    problem.add(new Constraint("constraint" + counter++, linear, "<=", 0));
 
                     linear = new Linear();
                     linear.add(1, "a_" + t + "_" + i + "_" + my_j);
                     linear.add(-1, "fhat_" + t + "_" + my_j);
                     linear.add(-1, "x_" + i + "_" + my_j);
-                    problem.add(new Constraint(linear, ">=", -1));
+                    problem.add(new Constraint("constraint" + counter++, linear, ">=", -1));
 
                     linear = new Linear();
                     linear.add(1, "a_" + t + "_" + i + "_" + my_j);
-                    problem.add(new Constraint(linear, ">=", 0));
+                    problem.add(new Constraint("constraint" + counter++, linear, ">=", 0));
                 }
             }
         }
 
 
-        // Define dummy product variable b_tij = u_tj * x_ij
+        // Define dummy product variable b_ti = w_i * u_ti
         for(t = 0; t < nSamples; t++){
             for (i = 0; i < nClones; i++){
-                for(Integer my_j : G.outEdges.get(i)){
-                    linear = new Linear();
-                    linear.add(1, "b_" + t + "_" + i + "_" + my_j);
-                    linear.add(-1, "x_" + i + "_" + my_j);
-                    problem.add(new Constraint(linear, "<=", 0));
+                linear = new Linear();
+                linear.add(1, "b_" + t + "_" + i);
+                linear.add(-1, "w_" + i);
+                problem.add(new Constraint("constraint" + counter++, linear, "<=", 0));
 
-                    linear = new Linear();
-                    linear.add(1, "b_" + t + "_" + i + "_" + my_j);
-                    linear.add(-1, "u_" + t + "_" + my_j);
-                    problem.add(new Constraint(linear, "<=", 0));
+                linear = new Linear();
+                linear.add(1, "b_" + t + "_" + i);
+                linear.add(-1, "u_" + t + "_" + i);
+                problem.add(new Constraint("constraint" + counter++, linear, "<=", 0));
 
-                    linear = new Linear();
-                    linear.add(1, "b_" + t + "_" + i + "_" + my_j);
-                    linear.add(-1, "u_" + t + "_" + my_j);
-                    linear.add(-1, "x_" + i + "_" + my_j);
-                    problem.add(new Constraint(linear, ">=", -1));
+                linear = new Linear();
+                linear.add(1, "b_" + t + "_" + i);
+                linear.add(-1, "u_" + t + "_" + i);
+                linear.add(-1, "w_" + i);
+                problem.add(new Constraint("constraint" + counter++, linear, ">=", -1));
 
-                    linear = new Linear();
-                    linear.add(1, "b_" + t + "_" + i + "_" + my_j);
-                    problem.add(new Constraint(linear, ">=", 0));
-                }
+                linear = new Linear();
+                linear.add(1, "b_" + t + "_" + i);
+                problem.add(new Constraint("constraint" + counter++, linear, ">=", 0));
             }
         }
 
@@ -104,23 +108,68 @@ public class Calder {
                 linear = new Linear();
                 linear.add(1, "c_" + i + "_" + my_j);
                 linear.add(-1 * nSamples, "x_" + i + "_" + my_j);
-                problem.add(new Constraint(linear, "<=", 0));
+                problem.add(new Constraint("constraint" + counter++, linear, "<=", 0));
 
                 linear = new Linear();
                 linear.add(1, "c_" + i + "_" + my_j);
                 linear.add(-1, "tmin_" + my_j);
-                problem.add(new Constraint(linear, "<=", 0));
+                problem.add(new Constraint("constraint" + counter++, linear, "<=", 0));
 
                 linear = new Linear();
                 linear.add(1, "c_" + i + "_" + my_j);
                 linear.add(-1, "tmin_" + my_j);
                 linear.add(-1 * nClones, "x_" + i + "_" + my_j);
-                problem.add(new Constraint(linear, ">=", -1 * nClones));
+                problem.add(new Constraint("constraint" + counter++, linear, ">=", -1 * nClones));
 
                 linear = new Linear();
                 linear.add(1, "c_" + i + "_" + my_j);
-                problem.add(new Constraint(linear, ">=", 0));
+                problem.add(new Constraint("constraint" + counter++, linear, ">=", 0));
             }
+        }
+
+        // Add depth variables d_i in [1, n] for each i
+        for(i = 0; i < nClones; i++){
+            problem.setVarType("d_" + i, Integer.class);
+            linear = new Linear();
+            linear.add(1, "d_" + i);
+            problem.add(new Constraint("constraint" + counter++, linear, ">=", 1));
+
+            linear = new Linear();
+            linear.add(1, "d_" + i);
+            problem.add(new Constraint("constraint" + counter++, linear, "<=", nClones));
+        }
+        // Set up depth of root
+        problem.setVarType("d_" + nClones, Integer.class);
+        linear = new Linear();
+        linear.add(1, "d_" + nClones);
+        problem.add(new Constraint("constraint" + counter++, linear, "=", 0));
+
+        // Add depth constraints to prevent cycles: x_ij = 1 -> d_i = d_j - 1
+        for(i = 0; i < nClones + 1; i++){
+            for(Integer my_j : G.outEdges.get(i)){
+                linear = new Linear();
+                linear.add(1, "d_" + i);
+                linear.add(nClones + 1, "x_" + i + "_" + my_j);
+                linear.add(-1, "d_" + my_j);
+                problem.add(new Constraint("constraint" + counter++, linear, "<=", nClones));
+
+                linear = new Linear();
+                linear.add(1, "d_" + my_j);
+                linear.add(-1, "d_" + i);
+                linear.add(nClones + 1, "x_" + i + "_" + my_j);
+                problem.add(new Constraint("constraint" + counter++, linear, "<=", nClones + 2));
+            }
+        }
+
+        // Add a binary w_i variable for each vertex i where w_i indicates that i is in the solution
+        for(i = 0; i < nClones; i++){
+            problem.setVarType("w_" + i, VarType.BOOL);
+            linear = new Linear();
+            linear.add(1, "w_" + i);
+            for(Integer my_j:  G.inEdges.get(i)){
+                linear.add(-1, "x_" + my_j + "_" + i);
+            }
+            problem.add(new Constraint("constraint" + counter++, linear, "=", 0));
         }
 
         // The root (index nClones) must have exactly 1 outgoing edge
@@ -128,7 +177,7 @@ public class Calder {
         for(j = 0; j < nClones; j++){ // using all clones instead of delta_r because they are equivalent
             linear.add(1, "x_" + nClones + "_" + j);
         }
-        problem.add(new Constraint(linear, "=", 1));
+        problem.add(new Constraint("constraint" + counter++, linear, "=", 1));
 
 
         // Each NON-ROOT vertex must have at least as many incoming edges as outgoing
@@ -139,7 +188,7 @@ public class Calder {
                 for(Integer my_i : G.inEdges.get(j)) {
                     linear.add(1, "x_" + my_i + "_" + j);
                 }
-                problem.add(new Constraint(linear, ">=", 0));
+                problem.add(new Constraint("constraint" + counter++, linear, ">=", 0));
             }
         }
 
@@ -149,7 +198,7 @@ public class Calder {
             for(Integer my_i : G.inEdges.get(j)){
                 linear.add(1, "x_" + my_i + "_" + j);
             }
-            problem.add(new Constraint(linear, "<=", 1));
+            problem.add(new Constraint("constraint" + counter++, linear, "<=", 1));
         }
 
 
@@ -158,13 +207,9 @@ public class Calder {
             // for each sample, sum across clones of u must be <= 1
             linear = new Linear();
             for(i = 0; i < nClones; i++){
-                //linear.add(1, "u_" + t + "_" + i);
-                for(Integer my_j : G.outEdges.get(i)){
-                    linear.add(1, "b_" + t + "_" + i + "_" + my_j);
-
-                }
+                linear.add(1, "b_" + t + "_" + i);
             }
-            problem.add(new Constraint(linear, "<=", 1));
+            problem.add(new Constraint("constraint" + counter++, linear, "<=", 1));
 
             for(i = 0; i < nClones; i++){
                 //fhat is bounded by intervals
@@ -172,13 +217,13 @@ public class Calder {
                 linear.add(1, "fhat_" + t + "_" + i);
                 assert I.intervals[0][t][i] < I.intervals[1][t][i];
                 assert I.intervals[0][t][i] >= 0;
-                problem.add(new Constraint(linear, ">=", new BigDecimal(I.intervals[0][t][i])));
-                problem.add(new Constraint(linear, "<=", I.intervals[1][t][i]));
+                problem.add(new Constraint("constraint" + counter++, linear, ">=", new BigDecimal(I.intervals[0][t][i])));
+                problem.add(new Constraint("constraint" + counter++, linear, "<=", I.intervals[1][t][i]));
 
                 //u must be non-negative
                 linear = new Linear();
                 linear.add(1, "u_" + t + "_" + i);
-                problem.add(new Constraint(linear, ">=", 0));
+                problem.add(new Constraint("constraint" + counter++, linear, ">=", 0));
 
                 // Add sum condition equivalence
                 linear = new Linear();
@@ -187,62 +232,68 @@ public class Calder {
                 for(Integer my_j : G.outEdges.get(i)){
                     linear.add(1, "a_" + t + "_" + i + "_" + my_j);
                 }
-                problem.add(new Constraint(linear, "=", 0));
+                problem.add(new Constraint("constraint" + counter++, linear, "=", 0));
 
-                // Define constraints using y
-                // t < tmin -> y = 0
-                linear = new Linear();
-                linear.add(1, "tmin_"+ i);
-                linear.add(nSamples, "y_" + t + "_" + i);
-                problem.add(new Constraint(linear, "<=", t + nSamples));
+                if(longitudinal) {
+                    // Define constraints using y
+                    // t < tmin -> y = 0
+                    linear = new Linear();
+                    linear.add(1, "tmin_" + i);
+                    linear.add(nSamples, "y_" + t + "_" + i);
+                    problem.add(new Constraint("constraint" + counter++, linear, "<=", t + nSamples));
 
-                // t >= tmin -> y = 1
-                linear = new Linear();
-                linear.add(1, "tmin_"+ i);
-                linear.add(nSamples, "y_" + t + "_" + i);
-                problem.add(new Constraint(linear, ">=", t + 1));
+                    // t >= tmin -> y = 1
+                    linear = new Linear();
+                    linear.add(1, "tmin_" + i);
+                    linear.add(nSamples, "y_" + t + "_" + i);
+                    problem.add(new Constraint("constraint" + counter++, linear, ">=", t + 1));
 
-                // y = 0 -> fhat = 0
-                linear = new Linear();
-                linear.add(1, "fhat_" + t + "_" + i);
-                linear.add(-1, "y_" + t + "_" + i);
-                problem.add(new Constraint(linear, "<=", 0));
+                    // y = 0 -> fhat = 0
+                    linear = new Linear();
+                    linear.add(1, "fhat_" + t + "_" + i);
+                    linear.add(-1, "y_" + t + "_" + i);
+                    problem.add(new Constraint("constraint" + counter++, linear, "<=", 0));
 
-                //Define constraints using z
-                // t >= tmax -> z = 1
-                linear = new Linear();
-                linear.add(1, "tmax_" + i);
-                linear.add(nSamples, "z_" + t + "_" + i);
-                problem.add(new Constraint(linear, ">=", t + 1));
+                    //Define constraints using z
+                    // t >= tmax -> z = 1
+                    linear = new Linear();
+                    linear.add(1, "tmax_" + i);
+                    linear.add(nSamples, "z_" + t + "_" + i);
+                    problem.add(new Constraint("constraint" + counter++, linear, ">=", t + 1));
 
-                // t < tmax -> z = 0
-                linear = new Linear();
-                linear.add(1, "tmax_" + i);
-                linear.add(nSamples, "z_" + t + "_" + i);
-                problem.add(new Constraint(linear, "<=", t + nSamples));
+                    // t < tmax -> z = 0
+                    linear = new Linear();
+                    linear.add(1, "tmax_" + i);
+                    linear.add(nSamples, "z_" + t + "_" + i);
+                    problem.add(new Constraint("constraint" + counter++, linear, "<=", t + nSamples));
 
-                // z = 1 -> u = 0
-                linear = new Linear();
-                linear.add(1, "u_" + t + "_" + i);
-                linear.add(1, "z_" + t + "_" + i);
-                problem.add(new Constraint(linear, "<=", 1));
+                    // z = 1 -> u = 0
+                    linear = new Linear();
+                    linear.add(1, "u_" + t + "_" + i);
+                    linear.add(1, "z_" + t + "_" + i);
+                    problem.add(new Constraint("constraint" + counter++, linear, "<=", 1));
 
-                // u >= h for tmin <= t < tmax
-                linear = new Linear();
-                linear.add(1, "u_" + t + "_" + i);
-                linear.add(-1, "y_" + t + "_" + i);
-                linear.add(1, "z_" + t + "_" + i);
-                problem.add(new Constraint(linear, ">=", Main.MINIMUM_USAGE_H - 1));
+                    // u >= h for tmin <= t < tmax (w_i term allows u to vary for vertices that are not in the solution)
+                    linear = new Linear();
+                    linear.add(1, "u_" + t + "_" + i);
+                    linear.add(-1, "y_" + t + "_" + i);
+                    linear.add(1, "z_" + t + "_" + i);
+                    linear.add(-1, "w_" + i);
+                    problem.add(new Constraint("constraint" + counter++, linear, ">=", Main.MINIMUM_USAGE_H - 2));
+                    //problem.add(new Constraint(linear, ">=", .001 - 1));
+                }
             }
         }
 
-        // lineage continuity: x_ij * tmin_j <= tmax_i
-        for(i = 0; i < nClones; i++){
-            for(Integer my_j : G.outEdges.get(i)){
-                linear = new Linear();
-                linear.add(1, "c_" + i + "_" + my_j);
-                linear.add(-1, "tmax_" + i);
-                problem.add(new Constraint(linear, "<=", 0));
+        if (longitudinal){
+            // lineage continuity: x_ij * tmin_j <= tmax_i
+            for(i = 0; i < nClones; i++){
+                for(Integer my_j : G.outEdges.get(i)){
+                    linear = new Linear();
+                    linear.add(1, "c_" + i + "_" + my_j);
+                    linear.add(-1, "tmax_" + i);
+                    problem.add(new Constraint("constraint" + counter++, linear, "<=", 0));
+                }
             }
         }
 
@@ -254,32 +305,31 @@ public class Calder {
             //tmin is in [0, m]
             linear = new Linear();
             linear.add(1, "tmin_" + i);
-            problem.add(new Constraint(linear, "<=", nSamples));
+            problem.add(new Constraint("constraint" + counter++, linear, "<=", nSamples));
             linear = new Linear();
             linear.add(1, "tmin_" + i);
-            problem.add(new Constraint(linear, ">=", 0));
+            problem.add(new Constraint("constraint" + counter++, linear, ">=", 0));
 
             // tmax is in [0, m + 1]
             linear = new Linear();
             linear.add(1, "tmax_" + i);
-            problem.add(new Constraint(linear, "<=", nSamples + 1));
+            problem.add(new Constraint("constraint" + counter++, linear, "<=", nSamples + 1));
             linear = new Linear();
             linear.add(1, "tmax_" + i);
-            problem.add(new Constraint(linear, ">=", 0));
+            problem.add(new Constraint("constraint" + counter++, linear, ">=", 0));
 
             // tmin must be at least as small as tmax
             linear = new Linear();
             linear.add(1, "tmin_" + i);
             linear.add(-1, "tmax_" + i);
-            problem.add(new Constraint(linear, "<=", 0));
+            problem.add(new Constraint("constraint" + counter++, linear, "<=", 0));
 
-
+        }
+        for(i = 0; i < nClones; i++){
             for(t = 0; t < nSamples; t++){
                 problem.setVarType("y_" + t + "_" + i, VarType.BOOL);
                 problem.setVarType("z_" + t + "_" + i, VarType.BOOL);
             }
-
-
         }
 
         // x is binary, c is integer
@@ -289,6 +339,9 @@ public class Calder {
                 problem.setVarType("c_" + i + "_" + my_j, VarType.INT);
             }
         }
+
+        //System.out.println(problem.getVariables());
+        //System.out.println(problem.getConstraints());
 
         try{
             return solver.solve(problem);
@@ -300,7 +353,6 @@ public class Calder {
 
     }
 
-
     private static void setDefaultObjective(Problem p, Instance I, Graph G, int nSamples, int nClones){
         int t, i;
         // Add a term for each possible edge in the tree (most mutations)
@@ -308,32 +360,28 @@ public class Calder {
         Linear linear = new Linear();
         for(i = 0; i < nClones + 1; i++){
             for(Integer my_j : G.outEdges.get(i)) {
-                linear.add(1000000, "x_" + i + "_" + my_j);
+                linear.add(Math.pow(10, Main.PRECISION_DIGITS + 1), "x_" + i + "_" + my_j);
             }
         }
-        // Add a term for each frequency matrix entry present in sample (largest CCF mutations)
-        for(t = 0; t < nSamples; t++){
-            for(i = 0; i < nClones + 1; i++){
-                for(Integer my_j : G.outEdges.get(i)) {
-                    linear.add(100000.0 * I.intervals[0][t][my_j] / ((double) nClones * nSamples), "x_" + i + "_" + my_j);
-                }
+
+        // Add a term for each frequency matrix entry present in sample (prioritize largest CCF mutations)
+        for(t = 0; t < nSamples; t++) {
+            for (i = 0; i < nClones; i++) {
+                linear.add(Math.pow(10, Main.PRECISION_DIGITS) * I.intervals[0][t][i] / ((double) nClones * nSamples), "w_" + i);
             }
         }
 
         // Add a term for each (included) usage matrix entry
-        // For any tj, b_tij is nonzero for at most one incoming edge (i,j) because x specifies a tree
         for(t = 0; t < nSamples; t++) {
             for (i = 0; i < nClones; i++) {
-                for(Integer my_j : G.outEdges.get(i)) {
-                    linear.add(((double) -1) / ((double) nClones * nSamples), "b_" + t + "_" + i + "_" + my_j);
-                }
+                linear.add(((double) -1) / ((double) nClones * nSamples), "b_" + t + "_" + i);
             }
         }
         p.setObjective(linear, OptType.MAX);
     }
 
     private static void setL0Norm(Problem problem, Instance I, Graph G, int nSamples, int nClones){
-        int t, i, j;
+        int t, i, j, counter = 0;
         Linear linear;
 
 
@@ -347,12 +395,12 @@ public class Calder {
                 for(Integer my_i : G.inEdges.get(j)){
                     linear.add(-1, "x_" + my_i + "_" + j);
                 }
-                problem.add(new Constraint(linear, "<=" , 0));
+                problem.add(new Constraint("l0constraint" + counter++, linear, "<=" , 0));
 
                 linear = new Linear();
                 linear.add(1, "q_" + t + "_" + j);
                 linear.add(1, "u_" + t + "_" + j);
-                problem.add(new Constraint(linear, "<=", 1));
+                problem.add(new Constraint("l0constraint" + counter++,linear, "<=", 1));
             }
         }
 
@@ -360,34 +408,22 @@ public class Calder {
         linear = new Linear();
         for(i = 0; i < nClones + 1; i++){
             for(Integer my_j : G.outEdges.get(i)) {
-                linear.add(1000000, "x_" + i + "_" + my_j);
-            }
-        }
-        // Add a term for each frequency matrix entry present in sample (largest CCF mutations)
-        for(t = 0; t < nSamples; t++){
-            for(i = 0; i < nClones + 1; i++){
-                for(Integer my_j : G.outEdges.get(i)) {
-                    linear.add(100000.0 * I.intervals[0][t][my_j] / ((double) nClones * nSamples), "x_" + i + "_" + my_j);
-                }
+                linear.add(Math.pow(10, Main.PRECISION_DIGITS + 1), "x_" + i + "_" + my_j);
             }
         }
 
-        /*
-        // Add a term for each (included) usage matrix entry
-        // For any tj, b_tij is nonzero for at most one incoming edge (i,j) because x specifies a tree
+        // Add a term for each frequency matrix entry present in sample (prioritize largest CCF mutations)
         for(t = 0; t < nSamples; t++) {
             for (i = 0; i < nClones; i++) {
-                for(Integer my_j : G.outEdges.get(i)) {
-                    linear.add(((double) -1) / ((double) nClones * nSamples), "b_" + t + "_" + i + "_" + my_j);
-                }
+                linear.add(Math.pow(10, Main.PRECISION_DIGITS) * I.intervals[0][t][i] /
+                        ((double) nClones * nSamples), "w_" + i);
             }
         }
-        */
 
         // Add a term for each 0 value in U
         for(t = 0; t < nSamples; t++) {
             for (i = 0; i < nClones; i++) {
-                linear.add(1, "q_" + t + "_" + i);
+                linear.add(((double) 1) / ((double) nClones * nSamples), "q_" + t + "_" + i);
             }
         }
 
@@ -400,7 +436,7 @@ public class Calder {
      * @param r ILPResult object constructed from previous solution
      * @return constraint to prevent the edges from being returned
      */
-    public static Constraint constructDummyConstraint(ILPResult r){
+    public static Constraint constructDummyConstraint(ILPResult r, int counter){
         System.out.println(r.T.toString());
 
         Linear linear = new Linear();
@@ -413,6 +449,6 @@ public class Calder {
         }
 
         // Any other tree must be missing at least 1 edge from this set (because this solution has maximal # of edges)
-        return new Constraint(linear, "<=", total - 1);
+        return new Constraint("extraConstraint" + counter, linear, "<=", total - 1);
     }
 }

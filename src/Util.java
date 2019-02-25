@@ -119,12 +119,15 @@ public class Util {
             b.append("\t");
         }
         b.append('\n');
+        String res;
         for(i = 0; i < arr.length; i++){
             b.append(rowLabels[i]);
             b.append(": ");
             b.append("\t");
             for(j = 0; j < arr[i].length; j++){
-                b.append(df.format(arr[i][j]));
+                res = df.format(arr[i][j]);
+                b.append(res);
+                b.append(spaces(6 -  res.length()));
                 b.append("\t");
             }
             b.append('\n');

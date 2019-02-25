@@ -217,7 +217,7 @@ public class ILPResult {
 
         return b.toString();
     }
-    public String printConcise(){
+    public String toStringConcise(){
         StringBuilder b = new StringBuilder();
 
         int t, i;
@@ -243,14 +243,19 @@ public class ILPResult {
         b.append(Util.print2DArray(u, myColLabels, myRowLabels));
         b.append('\n');
 
-        Graph G = new Graph();
-        int root = idToIndex.get(T.root);
+        boolean first = true;
         for(Integer u : T.vertices){
             for (Integer v : T.outEdges.get(u)){
-                G.addEdge(idToIndex.get(u), idToIndex.get(v));
+                if(first){
+                    first = false;
+                } else {
+                    b.append('\n');
+                }
+                b.append(idToIndex.get(u));
+                b.append(',');
+                b.append(idToIndex.get(v));
             }
         }
-        b.append(new Tree(G, root, nSamples));
 
         return b.toString();
     }
