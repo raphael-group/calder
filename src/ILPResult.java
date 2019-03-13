@@ -240,7 +240,7 @@ public class ILPResult {
         }
 
 
-        b.append(Util.print2DArray(u, myColLabels, myRowLabels));
+        b.append(Util.print2DArray(u, myColLabels, myRowLabels, Main.PRECISION_DIGITS));
         b.append('\n');
 
         boolean first = true;

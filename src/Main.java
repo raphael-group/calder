@@ -12,7 +12,7 @@ import java.lang.management.*;
 
 public class Main {
     static String INFILE = null;
-    static String OUTDIR = "output/"; //TODO: change this back to empty by default
+    static String OUTDIR = "current/"; //TODO: change this back to empty by default
 
     static String OUTFILE = "log.txt";
     static int MAX_NUM_OPTIMA_OUTPUT = 1;
@@ -22,37 +22,47 @@ public class Main {
 
     static double CONFIDENCE = .9;
     static double MINIMUM_USAGE_H = .01;
-    static double PRECISION_DIGITS = 6;
+    static int PRECISION_DIGITS = 6;
 
     static boolean PRINT_ANCESTRY_GRAPH = true;
     static boolean PRINT_CONFIDENCE_INTERVALS = true;
     static boolean PRINT_EFFECTIVE_CONFIDENCE = true;
+    static boolean COUNT = false;
 
     public static void main(String[] args) {
-        Instant start = Instant.now();
+        long start = System.currentTimeMillis();
 
-        //INFILE = "CLL003_clustered.txt";
+        INFILE = "CLL003_clustered.txt";
 
+        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
+        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
         //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
 
         //INFILE = "../Results/Data/CALDER format/eirew_a_readcounts.txt";
         //INFILE = "../Results/Data/CALDER format/eirew_b_readcounts.txt";
         //INFILE = "../Results/Data/CALDER format/eirew_494_readcounts.txt";
-
         //INFILE = "../Results/Data/CALDER format/eirew_a_cl_readcounts.txt";
 
         //INFILE = "../Results/Data/StJude/SJALL013787_cl_readcounts.txt";
         //INFILE = "../Results/Data/CALDER format/sim1_readcounts.txt";
-        INFILE = "../Results/Data/sim/instance0_cl_readcounts.txt";
+        //INFILE = "../Results/Data/sim/instance0_cl_readcounts.txt";
 
         System.out.println(Arrays.toString(args));
+
+        PRINT_EFFECTIVE_CONFIDENCE = false;
+        PRINT_CONFIDENCE_INTERVALS = false;
+        PRINT_ANCESTRY_GRAPH = false;
 
         if(args.length > 0){
             INFILE = args[0];
         }
-        PRINT_ANCESTRY_GRAPH = false;
-        PRINT_CONFIDENCE_INTERVALS = false;
-        PRINT_EFFECTIVE_CONFIDENCE = false;
+
 
         //////////////////////////////////////////////////////////
         // Set up CALDER
@@ -116,7 +126,12 @@ public class Main {
 
         // construct an ILPResult object which unpacks the ILP variables
         ILPResult result = new ILPResult(r, I, G);
-        //System.out.println(result);
+
+        COUNT = false;
+
+        if(!COUNT){
+            //System.out.println(result);
+        }
 
         int total = 1; // 1 edge incoming to root
         for(int i = 0; i < I.nMuts; i++){
@@ -139,8 +154,10 @@ public class Main {
         try {
             PrintWriter writer = new PrintWriter(new File(OUTDIR + tkn + "_" + "tree" + c + ".txt"));
             //writer.write(result.toString() + "");
-            writer.write(result.toStringConcise());
-            writer.close();
+            if(!COUNT){
+                writer.write(result.toStringConcise());
+                writer.close();
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -148,19 +165,25 @@ public class Main {
 
         //Find additional solutions by adding a trivial constraint for each previous solution
         LinkedList<Constraint> extraConstraints = new LinkedList<>();
+        if (COUNT){
+            MAX_NUM_OPTIMA_OUTPUT = Integer.MAX_VALUE;
+        }
         while(c < MAX_NUM_OPTIMA_OUTPUT){
             // Add trivial restraint to
             extraConstraints.add(Calder.constructDummyConstraint(result, c));
 
             r = Calder.solve(I, G, extraConstraints, true);
             if(r != null && (result = new ILPResult(r, I, G)).T.vertices.size() == maximal) {
-                System.out.println(result);
+                System.out.println("Solution number " + (c+1) + "------------------------------------------");
+                //System.out.println(result);
                 try {
 
                     PrintWriter writer = new PrintWriter(new File(OUTDIR + tkn + "_" + "tree" + c + ".txt"));
                     //writer.write(result.toString() + "");
-                    writer.write(result.toStringConcise());
-                    writer.close();
+                    if(!COUNT){
+                        writer.write(result.toStringConcise());
+                        writer.close();
+                    }
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -171,23 +194,25 @@ public class Main {
             }
         }
 
+        System.out.println(c);
+
         ThreadMXBean bean = ManagementFactory.getThreadMXBean();
         DecimalFormat df = new DecimalFormat();
         df.setMaximumFractionDigits(3);
-        Instant stop = Instant.now();
+        long stop = System.currentTimeMillis();
         if(bean.isCurrentThreadCpuTimeSupported()){
             long cpuTime = bean.getCurrentThreadCpuTime(); // system + user time
             long userTime = bean.getCurrentThreadUserTime(); // user time
             long systemTime = bean.getCurrentThreadCpuTime() - bean.getCurrentThreadUserTime();
-            System.out.println("wall: " + Duration.between(start, stop).getNano() / ((float) 1000000000)); // wall time
+            System.out.println("wall: " + (stop - start) / ((float) 1000)); // wall time
             System.out.println("user: " + userTime / ((float) 1000000000));
             System.out.println("system: " + systemTime / ((float) 1000000000));
             MemoryMXBean membean =  ManagementFactory.getMemoryMXBean();
             long mem = membean.getNonHeapMemoryUsage().getCommitted() + membean.getHeapMemoryUsage().getCommitted();
 
             try {
-                PrintWriter writer = new PrintWriter(new File("time/" + tkn + ".txt"));
-                writer.write("wall: " + Duration.between(start, stop).getNano() / ((float) 1000000000) + "\n"); // wall time
+                PrintWriter writer = new PrintWriter(new File("current_time/" + tkn + ".txt"));
+                writer.write("wall: " + (stop - start) / ((float) 1000) + "\n"); // wall time
                 writer.write("user: " + userTime / ((float) 1000000000) + "\n");
                 writer.write("system: " + systemTime / ((float) 1000000000) + "\n");
                 writer.write("memory: " + mem / ((float) 1000) + "\n");

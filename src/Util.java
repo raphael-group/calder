@@ -100,8 +100,11 @@ public class Util {
         return b.toString();
     }
 
-
     static String print2DArray(double[][] arr, String[] colLabels, String[] rowLabels){
+        return print2DArray(arr, colLabels, rowLabels, 3);
+    }
+
+    static String print2DArray(double[][] arr, String[] colLabels, String[] rowLabels, int digits){
         assert arr != null;
         assert colLabels != null;
         assert colLabels.length == arr[0].length;
@@ -109,7 +112,7 @@ public class Util {
         assert rowLabels.length == arr.length;
 
         DecimalFormat df = new DecimalFormat();
-        df.setMaximumFractionDigits(3);
+        df.setMaximumFractionDigits(digits);
 
         StringBuilder b = new StringBuilder();
         int i, j;
