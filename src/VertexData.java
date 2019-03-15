@@ -5,15 +5,13 @@ public class VertexData {
     public final int id;
     public final double[] minf;
     public final double[] maxf;
-    public final int tmin;
 
-    public VertexData(int id, double[] minf, double[] maxf, int tmin){
+    public VertexData(int id, double[] minf, double[] maxf){
         this.id = id;
 
         // Confidence intervals around the column of the frequency matrix corresponding to this mutation
         this.minf = minf;
         this.maxf = maxf;
-        this.tmin = tmin;
     }
 
     public boolean equals(Object o){

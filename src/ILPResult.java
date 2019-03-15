@@ -1,52 +1,107 @@
 import net.sf.javailp.Result;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 
 public class ILPResult {
-    public final Result result;
-    public final double objective;
-    public final double[][] fhat;
-    public final double[][] uhat;
-    public final int nClones;
-    public final int nSamples;
-    public final String[] rowLabels;
-    public final String[] colLabels;
-    public final HashMap<Integer,Integer> indexToId;
-    public final HashMap<Integer,Integer> idToIndex;
-    public final Tree T;
+    final Result result;
+    final Number objective;
+    final double[][] fhat;
+    final double[][] u;
+    final int nClones;
+    final int nSamples;
+    final String[] rowLabels;
+    final String[] colLabels;
+    private final HashMap<Integer,Integer> indexToId;
+    private final HashMap<Integer,Integer> idToIndex;
+    final Tree T;
 
-    public ILPResult(Result res, int nClones, int nSamples, HashMap<Integer,Integer> indexToId,
-                     HashMap<Integer,Integer> idToIndex, Tree T, String[] rowLabels, String[] colLabels){
+    public ILPResult(Result res, Instance I, Graph ancestryGraph){
         assert res != null;
-        assert nClones > 0;
-        assert nSamples > 0;
+        assert I.nMuts > 0;
+        assert I.nSamples > 0;
 
         this.result = res;
-        this.objective = (double) res.getObjective();
-        this.nClones = nClones;
-        this.nSamples = nSamples;
+        this.objective = res.getObjective();
+        this.nSamples = I.nSamples;
+
+        //find the root by looking at all x_nClones_i
+        int i, j, val, root = -1;
+        boolean foundRoot = false;
+        for(i = 0; i < I.nMuts; i++){
+            val = (int) res.getPrimalValue("x_" + I.nMuts + "_" + i);
+            if(val == 1){
+                if(foundRoot){
+                    System.out.println("Found multiple root vertices");
+                } else {
+                    foundRoot = true;
+                    root = i;
+                }
+            }
+        }
+
+        assert root > -1; // assert that we have a root
+
+        Tree T = new Tree(new Graph(), root, nSamples);
+        T.addVertex(root);
+        int clonesInTree = 1;
+
+        // build tree from positive x values
+        boolean[] vertexPresent = new boolean[I.nMuts];
+        vertexPresent[root] = true;
+
+        for(i = 0; i < I.nMuts; i++){
+            for(Integer my_j : ancestryGraph.outEdges.get(i)){
+                val = (int) res.getPrimalValue("x_" + i + "_" + my_j);
+                if (val == 1){
+                    T.addEdge(i, my_j);
+                    clonesInTree += 1;
+                    vertexPresent[my_j] = true;
+                }
+            }
+        }
+        assert T.inEdges.get(root).size() == 0; // the root should have no incoming vertices
+
+        //initialize nClones with the actual size of the tree
+        nClones = clonesInTree;
+
+        // create indexToId and idToIndex maps: id is the original value in [0, nMuts), index is mapped to [0, nClones]
+        HashMap<Integer, Integer> indexToId = new HashMap<>();
+        HashMap<Integer, Integer> idToIndex = new HashMap<>();
+        int idx = 0;
+        for(i = 0; i < I.nMuts; i++){
+            if(vertexPresent[i]){
+                idToIndex.put(i, idx);
+                indexToId.put(idx, i);
+                idx++;
+            }
+        }
+
         this.indexToId = indexToId;
         this.idToIndex = idToIndex;
         this.T = T;
 
 
-        this.rowLabels = rowLabels;
-        this.colLabels = colLabels;
+        this.rowLabels = I.rowLabels;
+        this.colLabels = I.colLabels;
 
+        u = new double[nSamples][nClones];
+        int t, id;
 
-        uhat = new double[nSamples][nClones];
-        int i, t, id;
+        // u has columns for only those mutations that are in the tree (there are nClones of them)
         for(t = 0; t < nSamples; t++){
             for(i = 0; i < nClones; i++){
-                uhat[t][i] = (double) result.getPrimalValue("uhat_" + t + "_" + i);
-
+                id = indexToId.get(i);
+                u[t][i] = (double) result.getPrimalValue("u_" + t + "_" + id);
             }
         }
+
+        // fhat has columns for only those mutations that are in the tree (there are nClones of them)
         fhat = new double[nSamples][nClones];
         for(t = 0; t < nSamples; t++){
             for(i = 0; i < nClones; i++) {
-                    id = indexToId.get(i);
-                    fhat[t][i] = (double) result.getPrimalValue("fhat_" + t + "_" + i);
+                id = indexToId.get(i);
+                fhat[t][i] = (double) result.getPrimalValue("fhat_" + t + "_" + id);
 
             }
         }
@@ -56,18 +111,30 @@ public class ILPResult {
         int result = 0;
         for(int t = 0; t < nSamples; t++){
             for(int i = 0; i < nClones; i ++){
-                if(uhat[t][i] > 0){
+                if(u[t][i] > 0){
                     result++;
                 }
             }
         }
         return result;
     }
+    public double totalPurity(){
+        double result = 0;
+        for(int t = 0; t < nSamples; t++){
+            for(int i = 0; i < nClones; i ++){
+                if(u[t][i] > 0){
+                    result+= u[t][i];
+                }
+            }
+        }
+        return result;
+    }
+
     public int[] clonePrecense(){
         int[] result = new int[nSamples];
         for(int t = 0; t < nSamples; t++){
             for(int i = 0; i < nClones; i ++){
-                if(uhat[t][i] > 0){
+                if(u[t][i] > 0){
                     result[t]++;
                 }
             }
@@ -111,18 +178,19 @@ public class ILPResult {
         }
 
         b.append("Fhat:\n");
-        b.append(Calder.print2DArray(fhat, myColLabels, myRowLabels));
+        b.append(Util.print2DArray(fhat, myColLabels, myRowLabels));
         b.append('\n');
 
         b.append("U:\n");
-        b.append(Calder.print2DArray(uhat, myColLabels, myRowLabels));
+        b.append(Util.print2DArray(u, myColLabels, myRowLabels));
         b.append('\n');
 
         b.append("tmin:");
         int id;
         for(i = 0; i < nClones; i++) {
             b.append(' ');
-            b.append(result.getPrimalValue("tmin_" + i));
+            id = indexToId.get(i);
+            b.append(result.getPrimalValue("tmin_" + id));
         }
 
         b.append('\n');
@@ -130,7 +198,8 @@ public class ILPResult {
         b.append("tmax:");
         for(i = 0; i < nClones; i++) {
             b.append(' ');
-            b.append(result.getPrimalValue("tmax_" + i));
+            id = indexToId.get(i);
+            b.append(result.getPrimalValue("tmax_" + id));
         }
         b.append('\n');
         b.append('\n');
@@ -148,7 +217,7 @@ public class ILPResult {
 
         return b.toString();
     }
-    public String printConcise(){
+    public String toStringConcise(){
         StringBuilder b = new StringBuilder();
 
         int t, i;
@@ -171,17 +240,22 @@ public class ILPResult {
         }
 
 
-        b.append(Calder.print2DArray(uhat, myColLabels, myRowLabels));
+        b.append(Util.print2DArray(u, myColLabels, myRowLabels, Main.PRECISION_DIGITS));
         b.append('\n');
 
-        Graph G = new Graph();
-        int root = idToIndex.get(T.root);
+        boolean first = true;
         for(Integer u : T.vertices){
             for (Integer v : T.outEdges.get(u)){
-                G.addEdge(idToIndex.get(u), idToIndex.get(v));
+                if(first){
+                    first = false;
+                } else {
+                    b.append('\n');
+                }
+                b.append(idToIndex.get(u));
+                b.append(',');
+                b.append(idToIndex.get(v));
             }
         }
-        b.append(new Tree(G, root, nSamples));
 
         return b.toString();
     }

@@ -2,18 +2,20 @@ import org.apache.commons.math3.distribution.BetaDistribution;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
 import java.util.*;
 
 import static java.lang.System.exit;
 
 public class Instance {
-    final int[][] variantReads;
-    final int[][] normalReads;
+    private final int[][] variantReads;
+    private final int[][] normalReads;
     final double[][][] intervals;
     final String[] colLabels;
     final String[] rowLabels;
     final int nSamples;
     final int nMuts;
+    private boolean printedEffectiveConfidence = false;
 
     /*
     public Instance(int[][] normalReads, int[][] variantReads){
@@ -76,8 +78,8 @@ public class Instance {
         for(i = 0; i < normalReads.length; i++){
             for(j = 0; j < normalReads[0].length; j++){
                 interval = computeBetaInterval(variantReads[i][j] + 1, normalReads[i][j] + 1);
-                mins[i][j] = interval[0];
-                maxes[i][j] = interval[1];
+                mins[i][j] = Math.floor(interval[0] * Math.pow(10, Main.PRECISION_DIGITS)) /  Math.pow(10, Main.PRECISION_DIGITS);
+                maxes[i][j] = Math.floor(interval[1] * Math.pow(10, Main.PRECISION_DIGITS)) /  Math.pow(10, Main.PRECISION_DIGITS);
             }
         }
 
@@ -95,8 +97,12 @@ public class Instance {
         BetaDistribution b = new BetaDistribution(alpha, beta);
         double resultingConfidence = 1 - ((1 - Main.CONFIDENCE) / (double) denom);
 
-        //TODO: add flag for printing resulting confidence
-        //System.out.println(resultingConfidence);
+        // Print the effective confidence level if the flag is set
+        if(Main.PRINT_EFFECTIVE_CONFIDENCE && !printedEffectiveConfidence){
+            DecimalFormat df = new DecimalFormat("00.00");
+            System.out.println("Effective confidence level (after multiple hypothesis correction): " + df.format(100* resultingConfidence) + "%");
+            printedEffectiveConfidence = true;
+        }
 
         double side = resultingConfidence / 2;
 
@@ -234,7 +240,7 @@ public class Instance {
         ArrayList<Integer> normalRow, variantRow;
         String tkn1 = "", tkn2 = "";
         int firstLength = -1;
-        int length, i, normalCount, variantCount;
+        int length, i;
         String header;
         File f = new File(filename);
         try (Scanner scanner = new Scanner(f)) {
@@ -320,9 +326,9 @@ public class Instance {
         //sb.append(Calder.print2DArray(normalReads, colLabels, rowLabels));
         //sb.append(Calder.print2DArray(variantReads, colLabels, rowLabels));
         sb.append("Interval lower bounds:\n");
-        sb.append(Calder.print2DArray(intervals[0], colLabels, rowLabels));
+        sb.append(Util.print2DArray(intervals[0], colLabels, rowLabels));
         sb.append("Interval upper bounds:\n");
-        sb.append(Calder.print2DArray(intervals[1], colLabels, rowLabels));
+        sb.append(Util.print2DArray(intervals[1], colLabels, rowLabels));
 
 
         return sb.toString();
