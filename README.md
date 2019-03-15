@@ -17,14 +17,14 @@ The following software is required for CALDER:
 
 * Linux/Unix or Windows
 * [Java 8 Runtime Environment (JRE)](https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
-* [Gurobi optimizer](http://www.gurobi.com/index) version 8.0
+* [Gurobi optimizer](http://www.gurobi.com/index) version 8.0, or any of the first 5 [ILP solvers listed here](http://javailp.sourceforge.net/)
 
 ### Testing
-With the dependencies set up correctly, the following command will run CALDER on the provided test input:
+With the dependencies set up correctly, the following command will run CALDER on the provided test input and write the results to a subdirectory called "output":
 
-    java -jar calder.jar -i CLL003_clustered.txt
+    java -jar calder.jar -i CLL003_clustered.txt -o output
 
-This should take no more than a few seconds to run and the output should match sample_output.txt.
+This should take no more than a few seconds to run and the output should match the contents of the sample_output folder.
 
 Use
 ----------------
@@ -42,19 +42,27 @@ The input file is a tab-separated text file representing a matrix of read counts
 The command to run CALDER is simply "java -jar calder.jar" followed by command line arguments. The option -i to designate the input file is required.
 
 ### Output
-The main output of CALDER is a text file, CALDER_output.txt. By default, this file lists run details and, for each optimal solution, the inferred frequency matrix F, usage matrix U (clone mixture proportions), and tree (represented as an adjacency list for each vertex), as well as the tmin and tmax values for each clone. See sample_output.txt for an example.
+The main output of CALDER is a text file for each solution, <input filename>_tree<solution index>.txt. By default, this file lists the inferred clone proportion matrix U and tree (represented as a list of edges with 0-indexed ids corresponding to columns of U). See the sample_output folder for an example.
 
-Stay tuned for additional scripts to visualize output.
+Stay tuned for additional utilities to visualize output.
 
 ### Command line options
-
+    Required
     -i,--input <arg>       input file path
-    -o,--output <arg>      output file path (default "CALDER_output.txt")
-    -t,--threads <arg>     number of threads (default 1)
+    -o,--output <arg>      output directory
+    
+    Additional options
     -a,--alpha <arg>       confidence level alpha (default 0.9)
-    -h,--threshold <arg>   detection threshold h (default 0.01)
+    -h,--threshold <arg>   detection threshold h (default 0.01) 
+    -O,--objective <arg>   objective function (l0 or l1)
+    -N,--nonlongitudinal   do not enforce longitudinal constraints (for non-longitudinal data)
+    -c,--printconf         print effective confidence level
+    -g,--print-graph       print ancestry graph
     -n,--intervals         print confidence intervals (default false)
-  
+    -s,--solutions <arg>   maximum number of optimal solutions to return (default 1)
+    -t,--time              track and output timing information
+    -v,--solver <arg>      MILP solver back-end (default gurobi)
+    
 Additional information
 ----------------
 
