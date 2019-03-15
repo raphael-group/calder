@@ -15,13 +15,6 @@ public class JarMain {
         alpha.setRequired(false);
         options.addOption(alpha);
 
-        // Gurobi automatically uses all available processors
-        /*
-        Option threads = new Option("t", "threads", true, "number of threads (default 1)");
-        threads.setRequired(false);
-        options.addOption(threads);
-        */
-
         Option detectionThreshold = new Option("h", "threshold", true, "detection threshold h (default 0.01)");
         detectionThreshold.setRequired(false);
         options.addOption(detectionThreshold);
@@ -50,6 +43,16 @@ public class JarMain {
         solver.setRequired(false);
         options.addOption(solver);
 
+        Option nonlong = new Option("N", "nonlongitudinal", false, "do not enforce longitudinal constraints");
+        nonlong.setRequired(false);
+        options.addOption(nonlong);
+
+        Option objective = new Option("O", "objective", true, "objective function (l0 or l1)");
+        objective.setRequired(false);
+        options.addOption(objective);
+
+
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = null;
@@ -69,11 +72,7 @@ public class JarMain {
                 Main.OUTDIR = cmd.getOptionValue("output");
             }
             // Gurobi automatically uses all available processors
-            /*
-            if (cmd.hasOption("threads")) {
-                Main.THREADS = Integer.parseInt(cmd.getOptionValue("threads"));
-            }
-            */
+
             if (cmd.hasOption("threshold")) {
                 Main.MINIMUM_USAGE_H = Double.parseDouble(cmd.getOptionValue("threshold"));
                 if(Main.MINIMUM_USAGE_H <= 0 || Main.MINIMUM_USAGE_H >= 1){
@@ -95,6 +94,17 @@ public class JarMain {
                     System.exit(1);
                 }
             }
+            if(cmd.hasOption("objective")){
+                String s = cmd.getOptionValue("objective");
+                if(s.equals("l0") || s.equals("L0")){
+                    Main.OBJECTIVE = Main.Objective.L0;
+                } else if(s.equals("l1") || s.equals("L1")){
+                    Main.OBJECTIVE = Main.Objective.L1;
+                } else {
+                    System.out.println("Objective must be one of the following: L0, L1");
+                    System.exit(1);
+                }
+            }
             if(cmd.hasOption("solver")) {
                 String s = cmd.getOptionValue("solver");
                 if (s.equals("lpsolve")) {
@@ -112,18 +122,14 @@ public class JarMain {
                     System.exit(1);
                 }
             }
-            if(cmd.hasOption("print-graph")){
-                Main.PRINT_ANCESTRY_GRAPH = true;
-            }
-            if(cmd.hasOption("intervals")){
-                Main.PRINT_CONFIDENCE_INTERVALS = true;
-            }
-            if(cmd.hasOption("printconf")){
-                Main.PRINT_EFFECTIVE_CONFIDENCE = true;
-            }
-            if(cmd.hasOption("time")) {
-                Main.TIMING = true;
-            }
+
+
+            Main.PRINT_ANCESTRY_GRAPH = cmd.hasOption("print-graph");
+            Main.PRINT_CONFIDENCE_INTERVALS = cmd.hasOption("intervals");
+            Main.PRINT_EFFECTIVE_CONFIDENCE = cmd.hasOption("printconf");
+            Main.TIMING = cmd.hasOption("time");
+            Main.LONGITUDINAL = cmd.hasOption("nonlongitudinal");
+
 
         } catch(NumberFormatException e){
             System.out.println(e.getMessage());

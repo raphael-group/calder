@@ -30,20 +30,15 @@ public class Calder {
         }
         factory.setParameter(Solver.VERBOSE, 0);
         factory.setParameter(Solver.TIMEOUT, 36000);
-
         solver = factory.get();
 
     }
 
     public static Result solve(Instance I, Graph G){
-        return solve(I, G, new LinkedList<>(), true);
+        return solve(I, G, new LinkedList<>());
     }
 
-    public static Result solveNonLongitudinal(Instance I, Graph G){
-        return solve(I, G, new LinkedList<>(), false);
-    }
-
-    public static Result solve(Instance I, Graph G,  List<Constraint> extraConstraints, boolean longitudinal){
+    public static Result solve(Instance I, Graph G,  List<Constraint> extraConstraints){
         Problem problem = new Problem();
         int nClones = I.nMuts;
         int nSamples = I.nSamples;
@@ -62,8 +57,14 @@ public class Calder {
         }
 
         // Construct objective function
-        setL0Norm(problem, I, G, nSamples, nClones);
-        //setDefaultObjective(problem, I, G, nSamples, nClones);
+        switch(Main.OBJECTIVE) {
+            case L0:
+                setL0Norm(problem, I, G, nSamples, nClones);
+                break;
+            case L1:
+                setL1Norm(problem, I, G, nSamples, nClones);
+                break;
+        }
 
         // Define dummy product variable a_tij = fhat_tj * x_ij
         for(t = 0; t < nSamples; t++){
@@ -250,7 +251,7 @@ public class Calder {
                 }
                 problem.add(new Constraint("constraint" + counter++, linear, "=", 0));
 
-                if(longitudinal) {
+                if(Main.LONGITUDINAL) {
                     // Define constraints using y
                     // t < tmin -> y = 0
                     linear = new Linear();
@@ -301,7 +302,7 @@ public class Calder {
             }
         }
 
-        if (longitudinal){
+        if (Main.LONGITUDINAL){
             // lineage continuity: x_ij * tmin_j <= tmax_i
             for(i = 0; i < nClones; i++){
                 for(Integer my_j : G.outEdges.get(i)){
@@ -369,7 +370,7 @@ public class Calder {
 
     }
 
-    private static void setDefaultObjective(Problem p, Instance I, Graph G, int nSamples, int nClones){
+    private static void setL1Norm(Problem p, Instance I, Graph G, int nSamples, int nClones){
         int t, i;
         // Add a term for each possible edge in the tree (most mutations)
 

@@ -31,8 +31,14 @@ public class Main {
     static boolean PRINT_EFFECTIVE_CONFIDENCE = false;
     static boolean COUNT = false;
     static boolean TIMING = false;
+    static Objective OBJECTIVE = Objective.L0;
+    static boolean LONGITUDINAL = true;
+    static int THREADS = 1;
     static JavaILPSolver SOLVER = JavaILPSolver.GUROBI;
 
+    enum Objective {
+        L0, L1;
+    }
     enum JavaILPSolver{
         LP_SOLVE, CPLEX, GUROBI, MOSEK, GLPK;
     }
@@ -155,14 +161,14 @@ public class Main {
             // Add trivial restraint to
             extraConstraints.add(Calder.constructDummyConstraint(result, c));
 
-            r = Calder.solve(I, G, extraConstraints, true);
+            r = Calder.solve(I, G, extraConstraints);
             if(r != null && (result = new ILPResult(r, I, G)).T.vertices.size() == maximal) {
                 System.out.println("Solution number " + (c+1) + "------------------------------------------");
                 //System.out.println(result);
                 try {
 
                     PrintWriter writer = new PrintWriter(new File(OUTDIR + File.separator + tkn + "_" + "tree" + c + ".txt"));
-                    //writer.write(result.toString() + "");
+                    writer.write(result.toString() + "");
                     if(!COUNT){
                         writer.write(result.toStringConcise());
                         writer.close();
