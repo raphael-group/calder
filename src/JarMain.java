@@ -7,8 +7,8 @@ public class JarMain {
         input.setRequired(true);
         options.addOption(input);
 
-        Option output = new Option("o", "output", true, "output file path");
-        output.setRequired(false);
+        Option output = new Option("o", "output", true, "output directory");
+        output.setRequired(true);
         options.addOption(output);
 
         Option alpha = new Option("a", "alpha", true, "confidence level alpha (default 0.9)");
@@ -30,11 +30,11 @@ public class JarMain {
         printCI.setRequired(false);
         options.addOption(printCI);
 
-        Option nSolns = new Option("s", "solutions", false, "maximum number of optimal solutions to return (default 1)");
+        Option nSolns = new Option("s", "solutions", true, "maximum number of optimal solutions to return (default 1)");
         nSolns.setRequired(false);
         options.addOption(nSolns);
 
-        Option printConfidence = new Option("c", "printconf", true, "print effective confidence level");
+        Option printConfidence = new Option("c", "printconf", false, "print effective confidence level");
         printConfidence.setRequired(false);
         options.addOption(printConfidence);
 
@@ -42,6 +42,13 @@ public class JarMain {
         printGraph.setRequired(false);
         options.addOption(printGraph);
 
+        Option time = new Option("t", "time", false, "track and output timing information");
+        time.setRequired(false);
+        options.addOption(time);
+
+        Option solver = new Option("v", "solver", true, "MILP solver back-end");
+        solver.setRequired(false);
+        options.addOption(solver);
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -59,7 +66,7 @@ public class JarMain {
         try {
             Main.INFILE = cmd.getOptionValue("input");
             if (cmd.hasOption("output")){
-                Main.OUTFILE = cmd.getOptionValue("output");
+                Main.OUTDIR = cmd.getOptionValue("output");
             }
             // Gurobi automatically uses all available processors
             /*
@@ -88,7 +95,23 @@ public class JarMain {
                     System.exit(1);
                 }
             }
-
+            if(cmd.hasOption("solver")) {
+                String s = cmd.getOptionValue("solver");
+                if (s.equals("lpsolve")) {
+                    Main.SOLVER = Main.JavaILPSolver.LP_SOLVE;
+                } else if (s.equals("cplex")) {
+                    Main.SOLVER = Main.JavaILPSolver.CPLEX;
+                } else if (s.equals("gurobi")) {
+                    Main.SOLVER = Main.JavaILPSolver.GUROBI;
+                } else if (s.equals("mosek")) {
+                    Main.SOLVER = Main.JavaILPSolver.MOSEK;
+                } else if (s.equals("glpk")) {
+                    Main.SOLVER = Main.JavaILPSolver.GLPK;
+                } else {
+                    System.out.println("Solver must be one of the following: lpsolve, cplex, gurobi, mosek, glpk");
+                    System.exit(1);
+                }
+            }
             if(cmd.hasOption("print-graph")){
                 Main.PRINT_ANCESTRY_GRAPH = true;
             }
@@ -98,6 +121,10 @@ public class JarMain {
             if(cmd.hasOption("printconf")){
                 Main.PRINT_EFFECTIVE_CONFIDENCE = true;
             }
+            if(cmd.hasOption("time")) {
+                Main.TIMING = true;
+            }
+
         } catch(NumberFormatException e){
             System.out.println(e.getMessage());
             formatter.printHelp("calder", options);

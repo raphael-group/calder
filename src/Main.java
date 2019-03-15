@@ -2,6 +2,9 @@ import net.sf.javailp.Constraint;
 import net.sf.javailp.Result;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -12,9 +15,8 @@ import java.lang.management.*;
 
 public class Main {
     static String INFILE = null;
-    static String OUTDIR = "current/"; //TODO: change this back to empty by default
+    static String OUTDIR = "outdir/";
 
-    static String OUTFILE = "log.txt";
     static int MAX_NUM_OPTIMA_OUTPUT = 1;
 
     // don't need this if using Gurobi - automatically uses all detectable processors
@@ -24,45 +26,27 @@ public class Main {
     static double MINIMUM_USAGE_H = .01;
     static int PRECISION_DIGITS = 6;
 
-    static boolean PRINT_ANCESTRY_GRAPH = true;
-    static boolean PRINT_CONFIDENCE_INTERVALS = true;
-    static boolean PRINT_EFFECTIVE_CONFIDENCE = true;
+    static boolean PRINT_ANCESTRY_GRAPH = false;
+    static boolean PRINT_CONFIDENCE_INTERVALS = false;
+    static boolean PRINT_EFFECTIVE_CONFIDENCE = false;
     static boolean COUNT = false;
+    static boolean TIMING = false;
+    static JavaILPSolver SOLVER = JavaILPSolver.GUROBI;
+
+    enum JavaILPSolver{
+        LP_SOLVE, CPLEX, GUROBI, MOSEK, GLPK;
+    }
 
     public static void main(String[] args) {
-        long start = System.currentTimeMillis();
-
-        INFILE = "CLL003_clustered.txt";
-
-        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/rz_9_readcounts.txt";
-
-        //INFILE = "../Results/Data/CALDER format/eirew_a_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/eirew_b_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/eirew_494_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/eirew_a_cl_readcounts.txt";
-
-        //INFILE = "../Results/Data/StJude/SJALL013787_cl_readcounts.txt";
-        //INFILE = "../Results/Data/CALDER format/sim1_readcounts.txt";
-        //INFILE = "../Results/Data/sim/instance0_cl_readcounts.txt";
-
-        System.out.println(Arrays.toString(args));
-
-        PRINT_EFFECTIVE_CONFIDENCE = false;
-        PRINT_CONFIDENCE_INTERVALS = false;
-        PRINT_ANCESTRY_GRAPH = false;
-
-        if(args.length > 0){
-            INFILE = args[0];
+        if (INFILE == null){
+            INFILE = "CLL003_clustered.txt";
         }
 
+        if (!Files.exists(Paths.get(OUTDIR))) {
+            new File(OUTDIR).mkdirs();
+        }
+
+        long start = System.currentTimeMillis();
 
         //////////////////////////////////////////////////////////
         // Set up CALDER
@@ -70,7 +54,6 @@ public class Main {
 
         // Load data from file (TSV, basically AncesTree format)
         String fname = INFILE;
-
 
         Instance I = Instance.fromFile(fname);
         int n = I.nMuts;
@@ -140,7 +123,7 @@ public class Main {
                 //System.out.println("x_" + i + "_" + j + " = " + r.getPrimalValue("x_" + i + "_" + j));
             }
         }
-        System.out.println("Total of " + total + " vertices included");
+        System.out.println("Maximal tree contains " + total + " out of " + G.vertices.size() + " mutations/clusters");
         for(int i = 0; i < I.nMuts; i++){
             //System.out.println("d_" + i + " = " + r.getPrimalValue("d_" + i));
         }
@@ -152,7 +135,7 @@ public class Main {
         int maximal = result.nClones;
         int c = 0;
         try {
-            PrintWriter writer = new PrintWriter(new File(OUTDIR + tkn + "_" + "tree" + c + ".txt"));
+            PrintWriter writer = new PrintWriter(new File(OUTDIR + File.separator + tkn + "_" + "tree" + c + ".txt"));
             //writer.write(result.toString() + "");
             if(!COUNT){
                 writer.write(result.toStringConcise());
@@ -178,7 +161,7 @@ public class Main {
                 //System.out.println(result);
                 try {
 
-                    PrintWriter writer = new PrintWriter(new File(OUTDIR + tkn + "_" + "tree" + c + ".txt"));
+                    PrintWriter writer = new PrintWriter(new File(OUTDIR + File.separator + tkn + "_" + "tree" + c + ".txt"));
                     //writer.write(result.toString() + "");
                     if(!COUNT){
                         writer.write(result.toStringConcise());
@@ -194,13 +177,11 @@ public class Main {
             }
         }
 
-        System.out.println(c);
-
         ThreadMXBean bean = ManagementFactory.getThreadMXBean();
         DecimalFormat df = new DecimalFormat();
         df.setMaximumFractionDigits(3);
         long stop = System.currentTimeMillis();
-        if(bean.isCurrentThreadCpuTimeSupported()){
+        if(TIMING && bean.isCurrentThreadCpuTimeSupported()){
             long cpuTime = bean.getCurrentThreadCpuTime(); // system + user time
             long userTime = bean.getCurrentThreadUserTime(); // user time
             long systemTime = bean.getCurrentThreadCpuTime() - bean.getCurrentThreadUserTime();
@@ -211,7 +192,7 @@ public class Main {
             long mem = membean.getNonHeapMemoryUsage().getCommitted() + membean.getHeapMemoryUsage().getCommitted();
 
             try {
-                PrintWriter writer = new PrintWriter(new File("current_time/" + tkn + ".txt"));
+                PrintWriter writer = new PrintWriter(new File(OUTDIR + File.separator + tkn + "_" + "time.txt"));
                 writer.write("wall: " + (stop - start) / ((float) 1000) + "\n"); // wall time
                 writer.write("user: " + userTime / ((float) 1000000000) + "\n");
                 writer.write("system: " + systemTime / ((float) 1000000000) + "\n");

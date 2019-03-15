@@ -11,7 +11,23 @@ public class Calder {
     private static Solver solver;
 
     public static void init(){
-        factory = new SolverFactoryGurobi();
+        switch(Main.SOLVER){
+            case LP_SOLVE:
+                factory = new SolverFactoryLpSolve();
+                break;
+            case CPLEX:
+                factory = new SolverFactoryCPLEX();
+                break;
+            case GUROBI:
+                factory = new SolverFactoryGurobi();
+                break;
+            case MOSEK:
+                factory = new SolverFactoryMosek();
+                break;
+            case GLPK:
+                factory = new SolverFactoryGLPK();
+                break;
+        }
         factory.setParameter(Solver.VERBOSE, 0);
         factory.setParameter(Solver.TIMEOUT, 36000);
 
