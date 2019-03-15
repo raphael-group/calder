@@ -42,7 +42,7 @@ The input file is a tab-separated text file representing a matrix of read counts
 The command to run CALDER is simply "java -jar calder.jar" followed by command line arguments. The option -i to designate the input file is required.
 
 ### Output
-The main output of CALDER is a text file for each solution, <input filename>_tree<solution index>.txt. By default, this file lists the inferred clone proportion matrix U and tree (represented as a list of edges with 0-indexed ids corresponding to columns of U). See the sample_output folder for an example.
+The main output of CALDER is a text file for each solution, (input filename)_tree(solution index).txt. By default, this file lists the inferred clone proportion matrix U and tree (represented as a list of edges with 0-indexed ids corresponding to columns of U). See the sample_output folder for an example.
 
 Stay tuned for additional utilities to visualize output.
 
