@@ -39,7 +39,7 @@ public class JarMain {
         time.setRequired(false);
         options.addOption(time);
 
-        Option solver = new Option("v", "solver", true, "MILP solver back-end");
+        Option solver = new Option("v", "solver", true, "MILP solver back-end (default gurobi)");
         solver.setRequired(false);
         options.addOption(solver);
 
