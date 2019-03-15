@@ -3,3 +3,11 @@
 /src/META-INF/*
 tree*.txt
 CALDER_log.txt
+hs_err*
+time*
+current*
+output*
+revisit*
+orig*
+pycl_output*
+gurobi.log
