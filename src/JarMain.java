@@ -128,7 +128,7 @@ public class JarMain {
             Main.PRINT_CONFIDENCE_INTERVALS = cmd.hasOption("intervals");
             Main.PRINT_EFFECTIVE_CONFIDENCE = cmd.hasOption("printconf");
             Main.TIMING = cmd.hasOption("time");
-            Main.LONGITUDINAL = cmd.hasOption("nonlongitudinal");
+            Main.LONGITUDINAL = !cmd.hasOption("nonlongitudinal");
 
 
         } catch(NumberFormatException e){
