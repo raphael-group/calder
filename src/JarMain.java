@@ -100,7 +100,11 @@ public class JarMain {
                     Main.OBJECTIVE = Main.Objective.L0;
                 } else if(s.equals("l1") || s.equals("L1")){
                     Main.OBJECTIVE = Main.Objective.L1;
-                } else {
+
+                } else if(s.toLowerCase().equals("l0center")){
+                    Main.OBJECTIVE = Main.Objective.L0center;
+                }
+                    else {
                     System.out.println("Objective must be one of the following: L0, L1");
                     System.exit(1);
                 }
