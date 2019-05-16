@@ -18,6 +18,7 @@ The following software is required for CALDER:
 * Linux/Unix or Windows
 * [Java 8 Runtime Environment (JRE)](https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
 * [Gurobi optimizer](http://www.gurobi.com/index) version 8.0, or any of the first 5 [ILP solvers listed here](http://javailp.sourceforge.net/)
+* Optional: [Absence-Aware Clustering](https://github.com/raphael-group/Absence-Aware-Clustering) to cluster mutations.
 
 ### Testing
 With the dependencies set up correctly, the following command will run CALDER on the provided test input and write the results to a subdirectory called "output":
@@ -37,6 +38,8 @@ The input file is a tab-separated text file representing a matrix of read counts
     t1  700   300 0   0   0   0   0   0
     t2  700   300 800 200 900 100 900 100
     t3  600   400 800 200 900 100 900 100
+    
+For real datasets with a considerable number of mutations (more than 40), we recommend using [Absence-Aware Clustering](https://github.com/raphael-group/Absence-Aware-Clustering) to cluster mutations.
 
 ### Running
 The command to run CALDER is simply "java -jar calder.jar" followed by command line arguments. The option -i to designate the input file is required.
