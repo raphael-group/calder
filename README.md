@@ -17,7 +17,7 @@ The following software is required for CALDER:
 
 * Linux/Unix or Windows
 * [Java 8 Runtime Environment (JRE)](https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
-* [Gurobi optimizer](http://www.gurobi.com/index) version 8.0, or any of the first 5 [ILP solvers listed here](http://javailp.sourceforge.net/)
+* [ILP solver](#ilp-solvers) (see below)
 * Optional: [Absence-Aware Clustering](https://github.com/raphael-group/Absence-Aware-Clustering) to cluster mutations.
 
 ### Testing
@@ -66,6 +66,11 @@ Stay tuned for additional utilities to visualize output.
     -t,--time              track and output timing information
     -v,--solver <arg>      MILP solver back-end (default gurobi)
     
+### ILP solvers
+CALDER requires a specialized ILP solver. We recommend the [Gurobi optimizer](http://www.gurobi.com/index) (version 8.0 required), as it is fast, easy to install, and supported on all platforms (website includes instructions for obtaining a license, downloading, and installing). 
+
+If for some reason you would prefer not to use Gurobi (e.g., if you are part of a non-academic entity and not interested in purchasing a license), we also support the [GLPK solver](https://www.gnu.org/software/glpk/) with the [GLPK for Java interface](http://glpk-java.sourceforge.net/), or the [lp-solve solver](https://sourceforge.net/projects/lpsolve/files/lpsolve/5.5.2.5/). We generally found GLPK to be faster and easier to use on all platforms. For more details, see the specific installation instructions for each solver. Installation tends to be easier on Linux systems than on Mac or Windows systems. Note that you will need to **specify the alternate solver** using the -v option.
+
 Additional information
 ----------------
 
