@@ -1,0 +1,9 @@
+digraph CLL003_tree1 {
+v0 [label="NPY_NRG3"];
+v1 [label="ADAD1_CHTF8_HERC2_IL11RA_SF3B1_SHROOM1"];
+v3 [label="FAT3"];
+v4 [label="MUSK_SEMA3E"];
+v1 -> v4;
+v3 -> v0;
+v4 -> v3;
+}
