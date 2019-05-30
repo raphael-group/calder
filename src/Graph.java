@@ -1,5 +1,7 @@
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class Graph implements Serializable {
     final HashSet<Integer> vertices;
@@ -133,8 +135,53 @@ public class Graph implements Serializable {
                 b.append(dest);
                 b.append(") ");
             }
-            b.append('\n');
+            b.append(System.lineSeparator());
         }
+        return b.toString();
+    }
+
+    public String toDot(){
+        return toDot("G");
+    }
+
+    public String toDot(String graphName){
+        String[] labels = new String[vertices.size()];
+        for(int i = 0; i < vertices.size(); i++){
+            labels[i] = "" + i;
+        }
+        return toDot(graphName, labels);
+    }
+
+    public String toDot(String graphName, String[] labels){
+        StringBuilder b = new StringBuilder();
+        b.append("digraph ");
+        b.append(graphName);
+        b.append(" {");
+        b.append(System.lineSeparator());
+
+        // Add vertices
+        for(Integer i : vertices){
+            b.append("v");
+            b.append(i);
+            b.append(" [label=\"");
+            b.append(labels[i]);
+            b.append("\"];");
+            b.append(System.lineSeparator());        }
+
+        // Add edges
+        for(Integer i : vertices){
+            for(Integer j : outEdges.get(i)){
+                b.append("v");
+                b.append(i);
+                b.append(" -> ");
+                b.append("v");
+                b.append(j);
+                b.append(';');
+                b.append(System.lineSeparator());
+            }
+        }
+        b.append('}');
+
         return b.toString();
     }
 

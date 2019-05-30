@@ -130,7 +130,7 @@ public class Util {
             for(j = 0; j < arr[i].length; j++){
                 res = df.format(arr[i][j]);
                 b.append(res);
-                b.append(spaces(6 -  res.length()));
+                b.append(spaces(digits + 2 -  res.length()));
                 b.append("\t");
             }
             b.append('\n');

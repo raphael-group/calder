@@ -43,15 +43,25 @@ public class JarMain {
         solver.setRequired(false);
         options.addOption(solver);
 
-        Option nonlong = new Option("N", "nonlongitudinal", false, "do not enforce longitudinal constraints");
+        Option nonlong = new Option("N", "nonlongitudinal", false, "remove longitudinal constraints");
         nonlong.setRequired(false);
         options.addOption(nonlong);
 
-        Option objective = new Option("O", "objective", true, "objective function (l0 or l1)");
+        Option objective = new Option("O", "objective", true, "objective function (l0, l1, or l0center)");
         objective.setRequired(false);
         options.addOption(objective);
 
+        Option solver_verbose = new Option("sv", "verbose", true, "verbosity setting for JavaILP solver (effect depends on solver)");
+        solver_verbose.setRequired(false);
+        options.addOption(solver_verbose);
 
+        Option solver_timeout = new Option("st", "timeout", true, "timeout setting for JavaILP solver");
+        solver_timeout.setRequired(false);
+        options.addOption(solver_timeout);
+
+        Option tossCNA = new Option("r", "remove-columns", false, "discard mutations/clusters with abnormally high frequencies");
+        tossCNA.setRequired(false);
+        options.addOption(tossCNA);
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -113,27 +123,49 @@ public class JarMain {
                 String s = cmd.getOptionValue("solver");
                 if (s.equals("lpsolve")) {
                     Main.SOLVER = Main.JavaILPSolver.LP_SOLVE;
-                } else if (s.equals("cplex")) {
-                    Main.SOLVER = Main.JavaILPSolver.CPLEX;
                 } else if (s.equals("gurobi")) {
                     Main.SOLVER = Main.JavaILPSolver.GUROBI;
-                } else if (s.equals("mosek")) {
-                    Main.SOLVER = Main.JavaILPSolver.MOSEK;
                 } else if (s.equals("glpk")) {
                     Main.SOLVER = Main.JavaILPSolver.GLPK;
                 } else {
-                    System.out.println("Solver must be one of the following: lpsolve, cplex, gurobi, mosek, glpk");
+                    System.out.println("Solver must be one of the following: lpsolve, gurobi, glpk. Other solvers are " +
+                            "not supported.");
                     System.exit(1);
                 }
             }
-
+            if(cmd.hasOption("verbose")){
+                int verbose;
+                try{
+                    verbose = Integer.parseInt(cmd.getOptionValue("verbose"));
+                    if (verbose < 0){
+                        throw new NumberFormatException();
+                    }
+                    Main.SOLVER_VERBOSE = verbose;
+                } catch(NumberFormatException e){
+                    System.out.println("Solver verbose setting must be a positive integer.");
+                    System.exit(1);
+                }
+            }
+            if(cmd.hasOption("timeout")){
+                int timeout;
+                try{
+                    timeout = Integer.parseInt(cmd.getOptionValue("timeout"));
+                    if (timeout < 0){
+                        throw new NumberFormatException();
+                    }
+                    Main.SOLVER_TIMEOUT = timeout;
+                } catch(NumberFormatException e){
+                    System.out.println("Solver timeout must be a positive integer.");
+                    System.exit(1);
+                }
+            }
 
             Main.PRINT_ANCESTRY_GRAPH = cmd.hasOption("print-graph");
             Main.PRINT_CONFIDENCE_INTERVALS = cmd.hasOption("intervals");
             Main.PRINT_EFFECTIVE_CONFIDENCE = cmd.hasOption("printconf");
             Main.TIMING = cmd.hasOption("time");
             Main.LONGITUDINAL = !cmd.hasOption("nonlongitudinal");
-
+            Main.REMOVE_CNA = cmd.hasOption("remove-columns");
 
         } catch(NumberFormatException e){
             System.out.println(e.getMessage());

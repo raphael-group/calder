@@ -1,6 +1,7 @@
 import net.sf.javailp.Result;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 
 public class ILPResult {
@@ -143,17 +144,15 @@ public class ILPResult {
     }
 
     public String toString(){
+        return prettyPrint();
+    }
+
+
+    public String verbosePrint(){
         StringBuilder b = new StringBuilder();
 
         int t, i;
-        /*
-        double distance = 0;
-        for(t = 0; t < nSamples; t++){
-            for(i = 0; i < nClones; i++){
-                distance += Math.abs(fbars[t][i] - (double) result.getPrimalValue("fhat_" + t + "_" + i));
-            }
-        }
-        */
+
         b.append("Objective function value: ");
         b.append(objective);
         b.append('\n');
@@ -217,7 +216,66 @@ public class ILPResult {
 
         return b.toString();
     }
-    public String toStringConcise(){
+
+    public String treeToString(String name){
+        return T.toDot(name, colLabels);
+    }
+
+    public String treeToString(){
+        return treeToString("solution_tree");
+    }
+
+    public String solnToString(){
+        StringBuilder b = new StringBuilder();
+        DecimalFormat df = new DecimalFormat();
+        df.setMaximumFractionDigits(Main.PRECISION_DIGITS);
+
+        // header row for fhat
+        b.append("Fhat");
+        b.append(System.lineSeparator());
+        b.append("samples");
+        int t, i;
+        for(i = 0; i < nClones; i++){
+            b.append(',');
+            b.append(colLabels[i]);
+        }
+        b.append(System.lineSeparator());
+
+        for(t = 0; t < nSamples; t++){
+            b.append(rowLabels[t]);
+            for(i = 0; i < nClones; i++){
+                b.append(',');
+                b.append(df.format(fhat[t][i]));
+            }
+            b.append(System.lineSeparator());
+        }
+
+
+        b.append(System.lineSeparator());
+
+        b.append("U");
+        b.append(System.lineSeparator());
+        b.append("samples");
+        for(i = 0; i < nClones; i++){
+            b.append(',');
+            b.append(colLabels[i]);
+        }
+        b.append(System.lineSeparator());
+
+        for(t = 0; t < nSamples; t++){
+            b.append(rowLabels[t]);
+            for(i = 0; i < nClones; i++){
+                b.append(',');
+                b.append(df.format(u[t][i]));
+            }
+            b.append(System.lineSeparator());
+        }
+
+        return b.toString();
+
+    }
+
+    public String prettyPrint(){
         StringBuilder b = new StringBuilder();
 
         int t, i;
@@ -239,10 +297,12 @@ public class ILPResult {
             }
         }
 
-
         b.append(Util.print2DArray(u, myColLabels, myRowLabels, Main.PRECISION_DIGITS));
         b.append('\n');
 
+        // TODO: print root
+        b.append("Tree edges:");
+        b.append('\n');
         boolean first = true;
         for(Integer u : T.vertices){
             for (Integer v : T.outEdges.get(u)){

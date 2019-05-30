@@ -3,13 +3,9 @@ import net.sf.javailp.Result;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.lang.management.*;
 
@@ -33,19 +29,24 @@ public class Main {
     static boolean TIMING = false;
     static Objective OBJECTIVE = Objective.L0;
     static boolean LONGITUDINAL = true;
-    static int THREADS = 1;
     static JavaILPSolver SOLVER = JavaILPSolver.GUROBI;
+    static int SOLVER_VERBOSE = 0;
+    static int SOLVER_TIMEOUT = 36000;
+    static boolean REMOVE_CNA = false;
 
     enum Objective {
-        L0, L1;
+        L0, L1, L0center;
     }
     enum JavaILPSolver{
-        LP_SOLVE, CPLEX, GUROBI, MOSEK, GLPK;
+        LP_SOLVE, GUROBI, GLPK;
     }
 
     public static void main(String[] args) {
+
         if (INFILE == null){
             INFILE = "CLL003_clustered.txt";
+            //INFILE = "../Simulation/BranchingSimData/exome2/CALDER/exome2_119.txt";
+            COUNT = false;
         }
 
         if (!Files.exists(Paths.get(OUTDIR))) {
@@ -109,17 +110,13 @@ public class Main {
         //System.setErr(dummy);
 
         // solve big ILP
-        System.out.println("Starting to solve ILP");
-
         Result r = Calder.solve(I, G);
 
         // construct an ILPResult object which unpacks the ILP variables
         ILPResult result = new ILPResult(r, I, G);
 
-        COUNT = false;
-
         if(!COUNT){
-            //System.out.println(result);
+            System.out.println(result);
         }
 
         int total = 1; // 1 edge incoming to root
@@ -129,10 +126,13 @@ public class Main {
                 //System.out.println("x_" + i + "_" + j + " = " + r.getPrimalValue("x_" + i + "_" + j));
             }
         }
-        System.out.println("Maximal tree contains " + total + " out of " + G.vertices.size() + " mutations/clusters");
+        System.out.println("Maximal tree contains " + total + " out of " + (G.vertices.size() - 1) + " mutations/clusters");
+        /*
+        // For each mutation/cluster, prints the variable indicating whether or not it was included in the solution
         for(int i = 0; i < I.nMuts; i++){
-            //System.out.println("d_" + i + " = " + r.getPrimalValue("d_" + i));
+            System.out.println("d_" + i + " = " + r.getPrimalValue("d_" + i));
         }
+        */
 
         String[] infile_tkns = INFILE.split("/");
         String tkn = infile_tkns[infile_tkns.length - 1].split("\\.")[0].split("_")[0];
@@ -140,15 +140,8 @@ public class Main {
         // Write output solution to file tree0
         int maximal = result.nClones;
         int c = 0;
-        try {
-            PrintWriter writer = new PrintWriter(new File(OUTDIR + File.separator + tkn + "_" + "tree" + c + ".txt"));
-            //writer.write(result.toString() + "");
-            if(!COUNT){
-                writer.write(result.toStringConcise());
-                writer.close();
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        if(!COUNT){
+            writeSolution(tkn, result, c + 1);
         }
         c++;
 
@@ -158,24 +151,13 @@ public class Main {
             MAX_NUM_OPTIMA_OUTPUT = Integer.MAX_VALUE;
         }
         while(c < MAX_NUM_OPTIMA_OUTPUT){
-            // Add trivial restraint to
+            // Add trivial constraint to prohibit returning exactly the same tree
             extraConstraints.add(Calder.constructDummyConstraint(result, c));
 
             r = Calder.solve(I, G, extraConstraints);
             if(r != null && (result = new ILPResult(r, I, G)).T.vertices.size() == maximal) {
                 System.out.println("Solution number " + (c+1) + "------------------------------------------");
-                //System.out.println(result);
-                try {
-
-                    PrintWriter writer = new PrintWriter(new File(OUTDIR + File.separator + tkn + "_" + "tree" + c + ".txt"));
-                    writer.write(result.toString() + "");
-                    if(!COUNT){
-                        writer.write(result.toStringConcise());
-                        writer.close();
-                    }
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
+                writeSolution(tkn, result, c + 1);
                 c++;
             } else {
                 System.out.println("No more maximal trees");
@@ -207,6 +189,19 @@ public class Main {
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    public static void writeSolution(String fname, ILPResult result, int id){
+        try {
+            PrintWriter writer = new PrintWriter(new File(OUTDIR + File.separator + fname + "_" + "tree" + id + ".txt"));
+            writer.write(result.treeToString(fname + "_tree" + id));
+            writer.close();
+
+            writer = new PrintWriter(new File(OUTDIR + File.separator + fname + "_" + "soln" + id + ".txt"));
+            writer.write(result.solnToString());
+            writer.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
     }
 
