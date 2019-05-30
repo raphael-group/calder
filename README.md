@@ -41,6 +41,8 @@ The input file is a tab-separated text file representing a matrix of read counts
     
 For real datasets with a considerable number of mutations (more than 40), we recommend using [Absence-Aware Clustering](https://github.com/raphael-group/Absence-Aware-Clustering) to cluster mutations.
 
+CALDER assumes that input mutations are in copy-neutral regions, i.e., that the number of reads with a mutation is proportional to the number of cells with that mutation. If you suspect this assumption does not hold for your data, consider excluding mutations that may be affected by CNA; alternatively, if you have copy number calls (e.g., from [HATCHet](https://github.com/raphael-group/hatchet)), you could correct the read counts to represent the true CCF.
+
 ### Running
 The command to run CALDER is simply "java -jar calder.jar" followed by command line arguments. The option -i to designate the input file is required.
 
