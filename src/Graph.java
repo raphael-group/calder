@@ -181,6 +181,10 @@ public class Graph implements Serializable {
             }
         }
         b.append('}');
+<<<<<<< Updated upstream
+=======
+        b.append(System.lineSeparator());
+>>>>>>> Stashed changes
 
         return b.toString();
     }

@@ -193,11 +193,19 @@ public class Main {
     }
     public static void writeSolution(String fname, ILPResult result, int id){
         try {
+<<<<<<< Updated upstream
             PrintWriter writer = new PrintWriter(new File(OUTDIR + File.separator + fname + "_" + "tree" + id + ".txt"));
             writer.write(result.treeToString(fname + "_tree" + id));
             writer.close();
 
             writer = new PrintWriter(new File(OUTDIR + File.separator + fname + "_" + "soln" + id + ".txt"));
+=======
+            PrintWriter writer = new PrintWriter(new File(OUTDIR + File.separator + fname + "_" + "tree" + id + ".dot"));
+            writer.write(result.treeToString(fname + "_tree" + id));
+            writer.close();
+
+            writer = new PrintWriter(new File(OUTDIR + File.separator + fname + "_" + "soln" + id + ".csv"));
+>>>>>>> Stashed changes
             writer.write(result.solnToString());
             writer.close();
         } catch (FileNotFoundException e) {
