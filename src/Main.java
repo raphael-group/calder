@@ -45,6 +45,8 @@ public class Main {
 
         if (INFILE == null){
             INFILE = "CLL003_clustered.txt";
+            //INFILE = "CLL003_test.txt";
+
             //INFILE = "../Simulation/BranchingSimData/exome2/CALDER/exome2_119.txt";
             COUNT = false;
         }

@@ -206,95 +206,6 @@ public class Instance {
     }
 
     /**
-     * Converts a double matrix to an integer one for internal representation, returning the result and the scaling factor
-     * @param mins matrix of lower CI bounds to convert to ints
-     * @param maxes matrix of upper CI bounds to convert to ints
-     * @return ToIntResult encapsulating the matrix and scaling factor
-     */
-    private static ToIntResult toInt(double[][] mins, double[][] maxes){
-        assert mins != null;
-        assert mins.length > 0;
-        assert mins[0].length > 0;
-        assert maxes != null;
-        assert maxes.length > 0;
-        assert maxes[0].length > 0;
-        assert mins.length == maxes.length;
-        assert mins[0].length == maxes[0].length;
-
-        // Find the longest value, to use as a scaling factor for all values
-        int maxLen = 0;
-        int myLength;
-        String[] tokens;
-        double myVal;
-        for (int i = 0; i < mins.length; i++){
-            for(int j = 0; j < mins[0].length; j++){
-                myVal = mins[i][j];
-
-                try{
-                    assert myVal >= 0;
-                    assert myVal <= 1;
-                } catch(AssertionError e){
-                    System.err.println("Encountered value outside of [0,1] when frequency was expected");
-                    exit(1);
-                }
-
-                tokens = (myVal + "").split("\\.");
-                if(tokens.length < 2){
-                    myLength = 0;
-                } else {
-                    myLength = tokens[1].length();
-                }
-
-                if (myLength > maxLen){
-                    maxLen = myLength;
-                }
-            }
-        }
-
-        for (int i = 0; i < maxes.length; i++){
-            for(int j = 0; j < maxes[0].length; j++){
-                myVal = maxes[i][j];
-
-                try{
-                    assert myVal >= 0;
-                    assert myVal <= 1;
-                } catch(AssertionError e){
-                    System.err.println("Encountered value outside of [0,1] when frequency was expected");
-                    exit(1);
-                }
-
-                tokens = (myVal + "").split("\\.");
-                if(tokens.length < 2){
-                    myLength = 0;
-                } else {
-                    myLength = tokens[1].length();
-                }
-
-                if (myLength > maxLen){
-                    maxLen = myLength;
-                }
-            }
-        }
-
-        // Truncate at 8 decimal places to avoid int overflow
-        if(maxLen > 8){
-            maxLen = 8;
-        }
-
-        int factor = (int) Math.pow(10, maxLen);
-        int[][] newMins = new int[mins.length][mins[0].length];
-        int[][] newMaxes = new int[mins.length][mins[0].length];
-        for(int i = 0; i < mins.length; i++){
-            for(int j = 0; j < mins[0].length; j++){
-                newMins[i][j] = (int) Math.round(factor * mins[i][j]);
-                newMaxes[i][j] = (int) Math.round(factor * maxes[i][j]);
-            }
-        }
-
-        return new ToIntResult(newMins, newMaxes, factor);
-    }
-
-    /**
      * Reads an AncesTree-formatted TSV file with read counts and returns a corresponding Instance
      * @param filename TSV file containing integer read count values
      *                 (column and row labels, alternating normal and variant read count columns)
@@ -321,13 +232,31 @@ public class Instance {
 
             header = scanner.nextLine();
             tokens = header.split("[\t ]");
+            //System.out.println(Arrays.toString(tokens));
+            String[] realTokens = new String[1];
 
-            assert tokens.length % 2 == 1;
-
-            colLabels = new String[(tokens.length - 1) / 2];
-            for (i = 0; i < colLabels.length; i++){
-                colLabels[i] = tokens[2 * i + 1];
+            if(tokens.length % 2 == 1){
+                if(tokens[0].equals("")){
+                    realTokens = Arrays.copyOfRange(tokens, 1, tokens.length);
+                    System.out.println("Removed empty entry at the start of the header line.");
+                } else if (tokens[tokens.length - 1].equals("")) {
+                    realTokens = Arrays.copyOfRange(tokens, 0, tokens.length - 1);
+                    System.out.println("Removed empty entry at the end of the header line.");
+                } else {
+                    System.err.println("Unable to parse file: header line has an odd number of entries.");
+                    exit(1);
+                }
+            } else {
+                realTokens = tokens;
             }
+
+            colLabels = new String[(realTokens.length) / 2];
+            for (i = 0; i < colLabels.length; i++){
+                colLabels[i] = realTokens[2 * i];
+            }
+            firstLength = realTokens.length + 1;
+            //System.out.println(Arrays.toString(colLabels));
+            //System.out.println(firstLength);
 
             while (scanner.hasNextLine()) {
                 line = scanner.nextLine();
@@ -339,14 +268,11 @@ public class Instance {
                 tokens = line.split("\t");
 
                 length = tokens.length;
-                if(firstLength < 0){
-                    firstLength = length;
-                }
                 assert length == firstLength;
+
                 rowLabels.add(tokens[0]);
 
                 // Starts at 1 to skip row labels
-                //TODO: actually check to see if there are row labels, or just change this back
                 for(i = 1; i < tokens.length; i+= 2){
                     tkn1 = tokens[i].replaceAll("[ \n]", "");
                     tkn2 = tokens[i + 1].replaceAll("[ \n]", "");
