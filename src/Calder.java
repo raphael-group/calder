@@ -52,7 +52,7 @@ public class Calder {
         Problem problem = new Problem();
         int nMuts = I.nMuts;
         int nSamples = I.nSamples;
-        System.out.println("Solving VAFFP-U with " + nSamples + " samples and " + nMuts + " mutations/clusters.");
+        System.out.println("Solving VAFFP-U with " + nSamples + " samples and " + nMuts + " mutations/clusters..");
         int t, i, j, counter = 0;
         Linear linear;
 
@@ -557,8 +557,6 @@ public class Calder {
      * @return constraint to prevent the edges from being returned
      */
     public static Constraint constructDummyConstraint(ILPResult r, int counter){
-        System.out.println(r.T.toString());
-
         Linear linear = new Linear();
         int total = 0;
         for(int i : r.T.vertices){

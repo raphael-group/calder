@@ -1,7 +1,9 @@
 import net.sf.javailp.Result;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class ILPResult {
@@ -297,10 +299,14 @@ public class ILPResult {
             }
         }
 
+        b.append("Clone proportion matrix U");
+        b.append('\n');
         b.append(Util.print2DArray(u, myColLabels, myRowLabels, Main.PRECISION_DIGITS));
         b.append('\n');
 
-        // TODO: print root
+        b.append("Tree root vertex: ");
+        b.append(colLabels[T.root]);
+        b.append("\n");
         b.append("Tree edges:");
         b.append('\n');
         boolean first = true;
@@ -311,11 +317,12 @@ public class ILPResult {
                 } else {
                     b.append('\n');
                 }
-                b.append(idToIndex.get(u));
-                b.append(',');
-                b.append(idToIndex.get(v));
+                b.append(colLabels[u]);
+                b.append(" -> ");
+                b.append(colLabels[v]);
             }
         }
+        b.append('\n');
 
         return b.toString();
     }

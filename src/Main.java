@@ -25,7 +25,6 @@ public class Main {
     static boolean PRINT_ANCESTRY_GRAPH = false;
     static boolean PRINT_CONFIDENCE_INTERVALS = false;
     static boolean PRINT_EFFECTIVE_CONFIDENCE = false;
-    static boolean COUNT = false;
     static boolean TIMING = false;
     static Objective OBJECTIVE = Objective.L0;
     static boolean LONGITUDINAL = true;
@@ -33,6 +32,8 @@ public class Main {
     static int SOLVER_VERBOSE = 0;
     static int SOLVER_TIMEOUT = 36000;
     static boolean REMOVE_CNA = false;
+
+    static boolean COUNT = false; // TODO: explicit option for this
 
     enum Objective {
         L0, L1, L0center;
@@ -47,7 +48,7 @@ public class Main {
             INFILE = "CLL003_clustered.txt";
             //INFILE = "CLL003_test.txt";
 
-            //INFILE = "../Simulation/BranchingSimData/exome2/CALDER/exome2_119.txt";
+            MAX_NUM_OPTIMA_OUTPUT = 5;
             COUNT = false;
         }
 
@@ -61,7 +62,7 @@ public class Main {
         // Set up CALDER
         Calder.init();
 
-        // Load data from file (TSV, basically AncesTree format)
+        // Load data from file (TSV or white-space separated, similar to AncesTree format)
         String fname = INFILE;
 
         Instance I = Instance.fromFile(fname);
@@ -82,11 +83,13 @@ public class Main {
             mutations.add(new VertexData(i, myMin, myMax));
         }
 
+        System.out.println("Finished parsing input file.");
+
         if(PRINT_CONFIDENCE_INTERVALS){
             System.out.println(I);
         }
 
-        System.out.println("Building ancestry graph");
+        System.out.println("Building ancestry graph..");
 
         Graph G = Graph.buildAncestryGraph(mutations);
         if(Main.PRINT_ANCESTRY_GRAPH){
@@ -117,10 +120,6 @@ public class Main {
         // construct an ILPResult object which unpacks the ILP variables
         ILPResult result = new ILPResult(r, I, G);
 
-        if(!COUNT){
-            System.out.println(result);
-        }
-
         int total = 1; // 1 edge incoming to root
         for(int i = 0; i < I.nMuts; i++){
             for(Integer j : G.outEdges.get(i)){
@@ -128,7 +127,7 @@ public class Main {
                 //System.out.println("x_" + i + "_" + j + " = " + r.getPrimalValue("x_" + i + "_" + j));
             }
         }
-        System.out.println("Maximal tree contains " + total + " out of " + (G.vertices.size() - 1) + " mutations/clusters");
+        System.out.println("Maximal tree contains " + total + " out of " + (G.vertices.size() - 1) + " mutations/clusters.");
         /*
         // For each mutation/cluster, prints the variable indicating whether or not it was included in the solution
         for(int i = 0; i < I.nMuts; i++){
@@ -143,7 +142,9 @@ public class Main {
         int maximal = result.nClones;
         int c = 0;
         if(!COUNT){
-            writeSolution(tkn, result, c + 1);
+            System.out.println("Solution number 1------------------------------------------");
+            System.out.println(result);
+            writeSolution(tkn, result, 1);
         }
         c++;
 
@@ -159,10 +160,11 @@ public class Main {
             r = Calder.solve(I, G, extraConstraints);
             if(r != null && (result = new ILPResult(r, I, G)).T.vertices.size() == maximal) {
                 System.out.println("Solution number " + (c+1) + "------------------------------------------");
+                System.out.println(result);
                 writeSolution(tkn, result, c + 1);
                 c++;
             } else {
-                System.out.println("No more maximal trees");
+                System.out.println("No more optima. Found " + c + " optimal trees.");
                 break;
             }
         }
@@ -191,6 +193,8 @@ public class Main {
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        } else if (TIMING){
+            System.err.println("Platform does not support timing information (ThreadMXBean.isCurrentThreadCpuTimeSupported() returns false).");
         }
     }
     public static void writeSolution(String fname, ILPResult result, int id){

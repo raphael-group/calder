@@ -93,7 +93,7 @@ public class Instance {
                         continue;
                     } else {
                         if(!gaveWarning){
-                            System.out.println("WARNING: found mutation with abnormally high frequency (confidence interval lower bound > 0.5).");
+                            System.out.println("WARNING: found mutation(s) with abnormally high frequency (confidence interval lower bound > 0.5).");
                             gaveWarning = true;
                         }
                         System.out.println("Mutation " + colLabels[j] + " had original interval [" + interval[0] + ", " +
@@ -233,21 +233,21 @@ public class Instance {
             header = scanner.nextLine();
             tokens = header.split("[\t ]");
             //System.out.println(Arrays.toString(tokens));
-            String[] realTokens = new String[1];
+            String[] realTokens = new String[tokens.length];
+            int j = 0;
 
-            if(tokens.length % 2 == 1){
-                if(tokens[0].equals("")){
-                    realTokens = Arrays.copyOfRange(tokens, 1, tokens.length);
-                    System.out.println("Removed empty entry at the start of the header line.");
-                } else if (tokens[tokens.length - 1].equals("")) {
-                    realTokens = Arrays.copyOfRange(tokens, 0, tokens.length - 1);
-                    System.out.println("Removed empty entry at the end of the header line.");
+            // Remove empty entries from header row
+            for(i = 0; i < tokens.length; i++){
+                if(tokens[i].equals("")){
+                    System.out.println("Found empty entry in column [" + (i + 1) + "] of the header row, skipping it.");
                 } else {
-                    System.err.println("Unable to parse file: header line has an odd number of entries.");
-                    exit(1);
+                    realTokens[j++] = tokens[i];
                 }
-            } else {
-                realTokens = tokens;
+            }
+            realTokens = Arrays.copyOfRange(realTokens, 0, j);
+            if(j % 2 == 1){
+                System.err.println("Unable to parse file: found an odd number of non-empty entries in the header row.");
+                System.exit(1);
             }
 
             colLabels = new String[(realTokens.length) / 2];
@@ -258,17 +258,25 @@ public class Instance {
             //System.out.println(Arrays.toString(colLabels));
             //System.out.println(firstLength);
 
-            while (scanner.hasNextLine()) {
-                line = scanner.nextLine();
+            System.out.println("Found [" + colLabels.length + "] mutations/clusters in header " +
+                    "(expecting 1 + (2 * num_clusters) = " +  (2 * colLabels.length + 1) + " entries in each row).");
 
+            int rowNum = 0;
+            while (scanner.hasNextLine()) {
+                rowNum++;
+                line = scanner.nextLine();
 
                 normalRow = new ArrayList<>();
                 variantRow = new ArrayList<>();
 
                 tokens = line.split("\t");
-
                 length = tokens.length;
-                assert length == firstLength;
+
+                if (length != firstLength){
+                    System.err.println("Unable to parse file: row [" + rowNum + "] has [" + length + "] entries, " +
+                            "expected [" + (colLabels.length * 2 + 1) + "].");
+                    exit(1);
+                }
 
                 rowLabels.add(tokens[0]);
 
@@ -289,9 +297,6 @@ public class Instance {
             System.err.println(tkn1);
             System.err.println(tkn2);
             e.printStackTrace();
-            exit(1);
-        } catch(AssertionError e){
-            System.err.println("Unable to parse file: lines have different lengths");
             exit(1);
         } catch (FileNotFoundException e) {
             System.err.println("Unable to parse file: file not found");
