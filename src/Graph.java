@@ -7,10 +7,6 @@ public class Graph implements Serializable {
     final HashMap<Integer, HashSet<Integer>> outEdges;
     final HashMap<Integer, HashSet<Integer>> inEdges;
 
-    static HashMap<Edge, Integer> edgeEncoding = null;
-    static HashMap<Integer, Edge> edgeDecoding = null;
-    static int nEdges = 0;
-
     public Graph(){
         vertices = new HashSet<>();
         outEdges = new HashMap<>();
@@ -188,8 +184,6 @@ public class Graph implements Serializable {
 
     // Builds an ancestry graph by considering all pairwise evolutionary relationships meeting the ancestry conditions
     public static Graph buildAncestryGraph(Collection<VertexData> mutations){
-        edgeEncoding = new HashMap<>();
-        edgeDecoding = new HashMap<>();
         int i = 0;
 
         Graph G = new Graph();
@@ -197,7 +191,6 @@ public class Graph implements Serializable {
         for(VertexData v : mutations){
             G.addVertex(v);
         }
-        Edge e;
         boolean validEdge;
         for(VertexData u : mutations){
             for(VertexData v : mutations){
@@ -211,17 +204,12 @@ public class Graph implements Serializable {
                     }
                     if(validEdge){
                         G.addEdge(u.id, v.id);
-                        e = Edge.getEdge(u.id, v.id);
-                        edgeEncoding.put(e, i);
-                        edgeDecoding.put(i++, e);
                     }
 
                 }
             }
         }
-
-        nEdges = i;
-
+        
         return G;
     }
 
