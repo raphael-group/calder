@@ -48,8 +48,7 @@ public class Main {
             INFILE = "CLL003_clustered.txt";
             //INFILE = "CLL003_test.txt";
 
-            MAX_NUM_OPTIMA_OUTPUT = 5;
-            COUNT = false;
+            //MAX_NUM_OPTIMA_OUTPUT = 5;
         }
 
         if (!Files.exists(Paths.get(OUTDIR))) {

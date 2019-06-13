@@ -184,8 +184,6 @@ public class Graph implements Serializable {
 
     // Builds an ancestry graph by considering all pairwise evolutionary relationships meeting the ancestry conditions
     public static Graph buildAncestryGraph(Collection<VertexData> mutations){
-        int i = 0;
-
         Graph G = new Graph();
 
         for(VertexData v : mutations){

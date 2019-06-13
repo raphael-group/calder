@@ -232,6 +232,9 @@ public class ILPResult {
         DecimalFormat df = new DecimalFormat();
         df.setMaximumFractionDigits(Main.PRECISION_DIGITS);
 
+        assert u.length == nSamples;
+        assert u[0].length == nClones;
+
         // header row for fhat
         b.append("Fhat");
         b.append(System.lineSeparator());
@@ -239,7 +242,7 @@ public class ILPResult {
         int t, i;
         for(i = 0; i < nClones; i++){
             b.append(',');
-            b.append(colLabels[i]);
+            b.append(colLabels[indexToId.get(i)]);
         }
         b.append(System.lineSeparator());
 
@@ -260,7 +263,7 @@ public class ILPResult {
         b.append("samples");
         for(i = 0; i < nClones; i++){
             b.append(',');
-            b.append(colLabels[i]);
+            b.append(colLabels[indexToId.get(i)]);
         }
         b.append(System.lineSeparator());
 
