@@ -47,11 +47,35 @@ CALDER assumes that input mutations are in copy-neutral regions, i.e., that the 
 The command to run CALDER is simply "java -jar calder.jar" followed by command line arguments. The option -i to designate the input file is required.
 
 ### Output
-The main output of CALDER is a text file for each solution, (input filename)_tree(solution index).txt. By default, this file lists the inferred clone proportion matrix U and tree (represented as a list of edges with 0-indexed ids corresponding to columns of U). See the sample_output folder for an example.
+For each solution, CALDER produces 2 text files: a DOT file containing the inferred phylogenetic tree T, and a CSV file containing the inferred frequency matrix Fhat and the clone proportion matrix U. DOT files can be visualized using standard tools such as [`graphviz`](https://www.graphviz.org/) (see below for an example), and the matrices in CSV format can also be manipulated using standard tools -- (see soln_to_timescape.py for an example that does so using the [`pandas`](https://pandas.pydata.org/) library in Python).
 
-Stay tuned for additional utilities to visualize output.
+### Visualizing output
+To visualize a tree using [Graphviz](https://www.graphviz.org/) (after installing it), you can navigate to the output directory and run the following command:
+```    
+dot -Tpng CLL003_tree1.dot > CLL003_soln1.png
+```
+See the Graphviz documentation for more options.
 
-### Command line options
+We provide a script to support visualizing clone mixture proportions using the [Timescape R package](https://bioconductor.org/packages/release/bioc/html/timescape.html). This requires the following dependencies:
+* Python 3
+* Python packages: `networkx`, `pandas`, and `pydot`
+* R >= 3.3
+* R package: [Timescape](https://bioconductor.org/packages/release/bioc/html/timescape.html) (and its dependencies)
+
+First, run the Python script to convert the solution DOT and CSV files to Timescape-formatted files:
+```
+python3 soln_to_timescape.py outdir/CLL003_soln1.csv outdir/CLL003_tree1.dot CLL003
+```
+Then, run the following commands in R to generate the visualization:
+```
+library(timescape)
+prev <- read.table("CLL003_prev.txt", header=TRUE)
+edges <- read.table("CLL003_edges.txt", header=TRUE)
+timescape(clonal_prev = prev, tree_edges = edges)
+```
+See the Timescape documentation for more options.
+
+### CALDER Command line options
     Required
     -i,--input <arg>       input file path
     -o,--output <arg>      output directory
