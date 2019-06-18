@@ -62,9 +62,9 @@ We provide a script to support visualizing clone mixture proportions using the [
 * R >= 3.3
 * R package: [Timescape](https://bioconductor.org/packages/release/bioc/html/timescape.html) (and its dependencies)
 
-First, run the Python script to convert the solution DOT and CSV files to Timescape-formatted files:
+First, run the Python script to convert the solution DOT and CSV files to Timescape-formatted files (assuming that `python` refers to Python 3):
 ```
-python3 soln_to_timescape.py outdir/CLL003_soln1.csv outdir/CLL003_tree1.dot CLL003
+python soln_to_timescape.py outdir/CLL003_soln1.csv outdir/CLL003_tree1.dot CLL003
 ```
 Then, run the following commands in R to generate the visualization:
 ```
@@ -74,6 +74,23 @@ edges <- read.table("CLL003_edges.txt", header=TRUE)
 timescape(clonal_prev = prev, tree_edges = edges)
 ```
 See the Timescape documentation for more options.
+
+### Clustering mutations
+We recommend clustering mutations by frequency before running CALDER - primarily because we generally expect to have multiple mutations distinguishing between any two clonal expansion events, and therefore between any two clones. We recommend using [Absence-Aware Clustering](https://github.com/raphael-group/Absence-Aware-Clustering), a clustering algorithm that pays particular attention to the distinction between mutation presence and absence. Python scripts are included to convert a CALDER input file to the format required by the clustering software, and to convert the clustering output back to CALDER input format.
+
+Requirements:
+* [Absence-Aware Clustering](https://github.com/raphael-group/Absence-Aware-Clustering) (see the link for dependencies as well as instructions for installation and usage)
+* [Python 3](https://www.python.org/downloads/)
+
+The following command converts CALDER-formatted input to clustering input (assuming that `python` refers to Python 3):
+```
+python calder_to_clustering.py calder_input.txt clustering_input.txt
+```
+
+Then, after running Absence-Aware Clustering, use the following command to apply the cluster assignments to the original data (where `clustering_assignments.txt` is the output file from the top level of the clustering output directory):
+```
+python apply_clustering.py calder_input.txt cluster_assignments.txt calder_input_clustered.txt
+```
 
 ### CALDER Command line options
     Required
