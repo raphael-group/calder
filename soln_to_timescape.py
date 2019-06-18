@@ -1,3 +1,5 @@
+# Author: Matt Myers (created 6/12/2019)
+
 from string import ascii_uppercase
 import pandas as pd
 import networkx as nx
