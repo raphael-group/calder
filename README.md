@@ -121,4 +121,8 @@ Additional information
 See `LICENSE` for license information.
 
 ### Citation
-If you use CALDER in your work, please cite the following preprint: https://www.biorxiv.org/content/10.1101/526814v1.
+If you use CALDER in your work, please cite the following paper ([available here](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30191-7)):
+
+```
+Myers, M.A., Satas, G. and Raphael, B.J., 2019. CALDER: Inferring Phylogenetic Trees from Longitudinal Tumor Samples. Cell Systems.
+```
