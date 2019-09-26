@@ -116,6 +116,8 @@ If for some reason you would prefer not to use Gurobi (e.g., if you are part of 
 
 Additional information
 ----------------
+###
+For assistance with running CALDER, interpreting the results, or other related questions, please email me (Matt Myers) at this address: [mm63@cs.princeton.edu](mailto:mm63@cs.princeton.edu)
 
 ### License
 See `LICENSE` for license information.
