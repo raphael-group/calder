@@ -82,14 +82,14 @@ Requirements:
 * [Absence-Aware Clustering](https://github.com/raphael-group/Absence-Aware-Clustering) (see the link for dependencies as well as instructions for installation and usage)
 * [Python 3](https://www.python.org/downloads/)
 
-The following command converts CALDER-formatted input to clustering input (assuming that `python` refers to Python 3):
+The following command converts CALDER-formatted input to clustering input (assuming that `python` refers to Python 3, otherwise use `python3` explicitly):
 ```
 python calder_to_clustering.py calder_input.txt clustering_input.txt
 ```
 
 Then, after running Absence-Aware Clustering, use the following command to apply the cluster assignments to the original data (where `clustering_assignments.txt` is the output file from the top level of the clustering output directory):
 ```
-python apply_clustering.py calder_input.txt cluster_assignments.txt calder_input_clustered.txt
+python apply_clustering.py clustering_input.txt cluster_assignments.txt calder_input_clustered.txt
 ```
 
 ### CALDER Command line options
