@@ -5,6 +5,17 @@ import pandas as pd
 import networkx as nx
 import sys
 import os
+import traceback
+from math import log
+
+def to_ascii(x):
+    """ Converts a 0-indexed integer to the corresponding Excel-style column name """
+    x += 1
+    result = []
+    while x:
+        x, rem = divmod(x-1, 26)
+        result[:0] = ascii_uppercase[rem]
+    return ''.join(result)
 
 def parse_csv(csv_fname):
     # Read in solution CSV file (names=range(10000) specifies the max number of mutations))
@@ -51,21 +62,21 @@ def main():
         tables = parse_csv(sys.argv[1])
     except Exception as e:
         print("Error parsing argument 1 as CSV file.")
-        print(e)
+        traceback.print_exc()
         quit(1)
     
     try:
         tree_dict = parse_dot(sys.argv[2])
     except Exception as e:
         print("Error parsing argument 2 as DOT file.")
-        print(e)
+        traceback.print_exc()
         quit(1)
 
     try:
         write_timescape(tables['U'], tree_dict, sys.argv[3])
     except Exception as e:
         print("Error converting file to Timescape format.")
-        print(e)
+        traceback.print_exc()
         quit(1)
     
 
@@ -78,7 +89,7 @@ def write_timescape(U, tree_dict, stem):
     indexes = {}
     for i in range(len(order)):
         indexes[order[i]] = i    
-    
+
     m, n = U.shape
     n -= 1 # first column contains sample labels
     for t in range(m):
@@ -86,7 +97,7 @@ def write_timescape(U, tree_dict, stem):
         for i in range(n):
             newrow = []
             newrow.append(tp)
-            newrow.append(ascii_uppercase[indexes[U.columns[i + 1]]])
+            newrow.append(to_ascii(indexes[U.columns[i + 1]]))
             newrow.append(str(U.iloc[t][i + 1]))
             rows.append(newrow)
     
@@ -102,12 +113,12 @@ def write_timescape(U, tree_dict, stem):
         f.write(os.linesep)
         for source, dests in tree_dict.items():
             for dest in dests:
-                f.write("\t".join([ascii_uppercase[indexes[source]], ascii_uppercase[indexes[dest]]]))
+                f.write("\t".join([to_ascii(indexes[source]), to_ascii(indexes[dest])]))
                 f.write(os.linesep)
 
-    print("Vertex labels are abbreviated in Timescape files using the following mapping...")
+    print("Vertex labels are abbreviated in Timescape files using the following mapping:")
     for i in range(len(order)):
-        print("Clone %s: %s" % (ascii_uppercase[i], order[i]))
+        print("Clone %s: %s" % (to_ascii(i), order[i]))
 
 def topological_sort(tree):
     roots = {}
