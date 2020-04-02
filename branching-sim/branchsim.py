@@ -3,6 +3,7 @@ from math import pow
 from datetime import datetime
 from scipy.stats import dirichlet, binom, nbinom, poisson
 from multiprocessing import Pool
+import numpy as np
 
 class Simulation:    
     seed = 0
@@ -94,10 +95,6 @@ class Simulation:
         genotypes[new_genotype] = True
         assert new_genotype not in N_genotype
         N_genotype[new_genotype] = 1
-
-    def nonreplicating(genotype, N_genotype, N_phenotype, geno_to_pheno):
-        N_genotype[genotype] -= 1
-        N_phenotype[geno_to_pheno[genotype]] -= 1
     
     # should be called before any other functions
     def simulate(self):
@@ -409,3 +406,114 @@ def run_sim_exome(seed):
     except IndexError:
         return -1
 
+def construct_patient_exome(sim, seed, error_rate=.001):
+    random.seed(seed)
+    np.random.seed(seed)
+
+    # Construct patient object from list of samples
+    detected_muts = {}
+    depth = []
+    for sample in sim.samples:
+        for mut, (ref, alt) in sample[0].items():
+            if alt / (ref + alt) > 0.02:
+                detected_muts[mut] = True
+                
+            depth.append(ref + alt)
+    med_depth = np.median(depth)
+    
+    instance = {}
+    instance['m'] = len(sim.samples)
+
+    mut_to_idx = {}
+    idx_to_mut = {}
+    sample_labels = {}
+    for t in range(len(sim.samples)):
+        sample_labels[t] = "t%d" % t
+        
+    # Use all mutations present in any sample
+    i = 0    
+    for sample in sim.samples:
+        for mut in sample[0].keys():
+            if mut in detected_muts and detected_muts[mut]:
+                if mut not in mut_to_idx:
+                    mut_to_idx[mut] = i
+                    idx_to_mut[i] = mut
+                    i += 1
+    instance['n'] = i
+    instance['mut_labels'] = idx_to_mut
+    instance['mut_to_idx'] = mut_to_idx
+    instance['sample_labels'] = sample_labels
+    
+    data = {}
+    for t in range(len(sim.samples)):
+        for i in range(instance['n']):
+            if idx_to_mut[i] in sim.samples[t][0] and sim.samples[t][0][idx_to_mut[i]][0] > 0:
+                data[t, i] = list(sim.samples[t][0][idx_to_mut[i]])
+            else:
+                var = np.random.binomial(200, error_rate)
+                data[t, i] = [200 - var, var]
+
+    instance['edges'] = sim.edges            
+    instance['data'] = data
+
+    m = instance['m']
+    n = instance['n']
+    trueF = np.zeros((m, n))
+    for i in range(n):
+        mut = instance['mut_labels'][i]
+        for t in range(m):
+            if mut in sim.samples[t][1]:
+                trueF[t][i] = sim.samples[t][1][mut]
+            else:
+                trueF[t][i] = 0
+    instance['trueF'] = trueF
+
+    return instance
+        
+def write_clustering_input(patient, filename):
+    m = patient['m']
+    n = patient['n']
+    
+    header = ["#sample_index","sample_label","anatomical_site_index","anatomical_site_label","character_index","character_label","ref","var"]
+
+    rows = []
+    rows.append(["1 # anatomical sites"])
+    rows.append([str(m) + " # samples"])
+    rows.append([str(n) + " # mutations"])
+    rows.append(header)
+    
+    for t in range(m):
+        for p in range(n):
+            if (t,p) in patient['data']:
+                my_row = [t, patient['sample_labels'][t]] + [0, "null"] + [p, patient['mut_labels'][p]] + patient['data'][(t, p)]
+            else:
+                print("Found 0-0 entry")
+                my_row = [t, patient['sample_labels'][t]] + [0, "null"] + [p, patient['mut_labels'][p]] + [100, 0]
+            rows.append([str(x) for x in my_row])
+    
+    with open(filename, 'w') as f:
+        f.write('\n'.join(['\t'.join(row) for row in rows]))
+
+def example_loop():
+    print(datetime.now())
+    seeds = []
+    sims = []
+    for seed in range(10):
+        try:
+            s = Simulation(5, seed=seed, abundance_threshold= pow(10, 7), mut_rate = 0.2, driver_rate = pow(10, -3), fitness_adv=0.02, generations_between_samples = 40)
+            totaldrivers = len(s.driver_muts)
+            founddrivers = len([x for x in s.driver_muts.keys() if x in s.edges])
+            
+            if founddrivers > 2:
+                print(seed)
+                print("Total muts: %d, extant muts %d, extant drivers %d" % (s.mut_idx, len(s.samples[-1][-1]), founddrivers))
+                sims.append(s)
+                seeds.append(seed)
+                if len(sims) > 5:
+                    break
+            else:
+                print("seed %d had only %d drivers" % (seed, founddrivers))
+        except IndexError:
+            print("seed %d failed" % seed)
+    print(datetime.now())
+    return sims, seeds
