@@ -52,7 +52,14 @@ public class Calder {
         Problem problem = new Problem();
         int nMuts = I.nMuts;
         int nSamples = I.nSamples;
-        System.out.println("Solving VAFFP-U with " + nSamples + " samples and " + nMuts + " mutations/clusters..");
+
+        if(Main.LONGITUDINAL) {
+            System.out.println("Solving LVAFFP-U with " + nSamples + " samples and " + nMuts + " mutations/clusters..");
+        } else {
+            System.out.println("Solving VAFFP-U with " + nSamples + " samples and " + nMuts + " mutations/clusters " +
+                    "(longitudinal constraints are NOT enabled)..");
+        }
+
         int t, i, j, counter = 0;
         Linear linear;
 
