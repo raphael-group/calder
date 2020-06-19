@@ -9,8 +9,7 @@ import java.util.stream.Collectors;
 import static java.lang.System.exit;
 
 public class Instance {
-    private final int[][] variantReads;
-    private final int[][] normalReads;
+    double[][] fbar;
     final double[][][] intervals;
     final String[] colLabels;
     final String[] rowLabels;
@@ -43,17 +42,17 @@ public class Instance {
     */
 
     private Instance(int[][] normalReads, int[][] variantReads, double[][][] intervals,
-                     String[] colLabels, String[] rowLabels, int nSamples, int nMuts){
-        this.normalReads = normalReads;
-        this.variantReads = variantReads;
+                     String[] colLabels, String[] rowLabels, int nSamples, int nMuts, double[][] fbar){
         this.intervals = intervals;
         this.colLabels = colLabels;
         this.rowLabels = rowLabels;
         this.nSamples = nSamples;
         this.nMuts = nMuts;
+        this.fbar = fbar;
     }
 
-    private static Instance constructInstance(int[][] normalReads, int[][] variantReads, String[] colLabels, String[] rowLabels){
+    private static Instance constructInstance(int[][] normalReads, int[][] variantReads,
+                                              String[] colLabels, String[] rowLabels){
         assert normalReads != null;
         assert normalReads.length > 0;
         assert normalReads[0].length > 0;
@@ -64,6 +63,7 @@ public class Instance {
         int nMuts = normalReads[0].length;
         double[][] mins = new double[normalReads.length][normalReads[0].length];
         double[][] maxes = new double[normalReads.length][normalReads[0].length];
+        double[][] fbar = new double[normalReads.length][normalReads[0].length];
 
         int i, j;
         double freq;
@@ -84,6 +84,8 @@ public class Instance {
         boolean gaveWarning = false;
         for(i = 0; i < normalReads.length; i++){
             for(j = 0; j < normalReads[0].length; j++){
+                fbar[i][j] = ((float) variantReads[i][j]) / ((float) normalReads[i][j] + variantReads[i][j]);
+
                 interval = computeBetaInterval(variantReads[i][j] + 1, normalReads[i][j] + 1, resultingConfidence);
                 if(interval.length == 3 && interval[2] == -1){
                     if (Main.REMOVE_CNA){
@@ -156,7 +158,7 @@ public class Instance {
             intervals[0] = result[0];
             intervals[1] = result[1];
 
-            return new Instance(normalReads, variantReads, intervals, colLabels, rowLabels, nSamples, nMuts);
+            return new Instance(normalReads, variantReads, intervals, colLabels, rowLabels, nSamples, nMuts, fbar);
         }
 
     }

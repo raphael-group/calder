@@ -517,14 +517,8 @@ public class Calder {
             }
         }
 
-        double[][] fbars = new double[nSamples][nClones];
         for(t = 0; t < nSamples; t++) {
             for (i = 0; i < nClones; i++) {
-                // Compute fbar values (mean of each confidence interval)
-                fbars[t][i] = (I.intervals[0][t][i] + I.intervals[1][t][i]) / 2;
-                assert fbars[t][i] >= 0;
-                assert fbars[t][i] <= 1;
-
                 // Add difference term to objective
                 linear.add(-1.0 / ((double) nClones * nSamples * nClones * nSamples), "d_" + t + "_" + i);
             }
@@ -539,12 +533,12 @@ public class Calder {
                 linear = new Linear();
                 linear.add(1, "fhat_" + t + "_" + i);
                 linear.add(1, "d_" + t + "_" + i);
-                problem.add(new Constraint(linear, ">=", fbars[t][i]));
+                problem.add(new Constraint(linear, ">=", I.fbar[t][i]));
 
                 linear = new Linear();
                 linear.add(1, "fhat_" + t + "_" + i);
                 linear.add(-1, "d_" + t + "_" + i);
-                problem.add(new Constraint(linear, "<=", fbars[t][i]));
+                problem.add(new Constraint(linear, "<=", I.fbar[t][i]));
             }
         }
     }
