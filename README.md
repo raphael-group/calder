@@ -99,16 +99,24 @@ python apply_clustering.py clustering_input.txt cluster_assignments.txt calder_i
     
     Additional options
     -a,--alpha <arg>       confidence level alpha (default 0.9)
-    -h,--threshold <arg>   detection threshold h (default 0.01) 
-    -O,--objective <arg>   objective function (l0 or l1)
-    -N,--nonlongitudinal   do not enforce longitudinal constraints (for non-longitudinal data)
     -c,--printconf         print effective confidence level
     -g,--print-graph       print ancestry graph
-    -n,--intervals         print confidence intervals (default false)
-    -s,--solutions <arg>   maximum number of optimal solutions to return (default 1)
+    -h,--threshold <arg>   detection threshold h (default 0.01)
+    -n,--intervals         print confidence intervals
+    -N,--nonlongitudinal   remove longitudinal constraints
+    -O,--objective <arg>   objective function (l0, l1, or l0center)
+    -r,--remove-columns    discard mutations/clusters with abnormally high
+                        frequencies
+    -s,--solutions <arg>   maximum number of optimal solutions to return
+                        (default 1)
+    -st,--timeout <arg>    timeout setting for JavaILP solver
+    -sv,--verbose <arg>    verbosity setting for JavaILP solver (effect
+                        depends on solver)
     -t,--time              track and output timing information
     -v,--solver <arg>      MILP solver back-end (default gurobi)
     
+The `l0center` option for the objective function includes the L1 norm of the difference between the observed and inferred frequency matrices as a subsequent objective.
+
 ### ILP solvers
 CALDER requires a specialized ILP solver. We recommend the [Gurobi optimizer](http://www.gurobi.com/index) (version 8.0 required), as it is fast, easy to install, and supported on all platforms (website includes instructions for obtaining a license, downloading, and installing). 
 
