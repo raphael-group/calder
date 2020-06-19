@@ -84,8 +84,12 @@ public class Instance {
         boolean gaveWarning = false;
         for(i = 0; i < normalReads.length; i++){
             for(j = 0; j < normalReads[0].length; j++){
-                fbar[i][j] = ((float) variantReads[i][j]) / ((float) normalReads[i][j] + variantReads[i][j]);
-
+                if (variantReads[i][j] > 0){
+                    fbar[i][j] = ((double) variantReads[i][j]) / ((double) normalReads[i][j] + variantReads[i][j]);
+                }
+                else {
+                    fbar[i][j] = 0.0;
+                }
                 interval = computeBetaInterval(variantReads[i][j] + 1, normalReads[i][j] + 1, resultingConfidence);
                 if(interval.length == 3 && interval[2] == -1){
                     if (Main.REMOVE_CNA){
