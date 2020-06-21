@@ -63,6 +63,10 @@ public class JarMain {
         tossCNA.setRequired(false);
         options.addOption(tossCNA);
 
+        Option enumerateTrees = new Option("e", "enumerate", false, "enumerate all maximal trees instead of just optimal solutions");
+        enumerateTrees.setRequired(false);
+        options.addOption(enumerateTrees);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = null;
@@ -166,6 +170,7 @@ public class JarMain {
             Main.TIMING = cmd.hasOption("time");
             Main.LONGITUDINAL = !cmd.hasOption("nonlongitudinal");
             Main.REMOVE_CNA = cmd.hasOption("remove-columns");
+            Main.ENUMERATE_TREES = cmd.hasOption("enumerate");
 
         } catch(NumberFormatException e){
             System.out.println(e.getMessage());

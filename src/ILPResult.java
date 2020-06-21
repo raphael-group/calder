@@ -1,3 +1,4 @@
+import net.sf.javailp.Linear;
 import net.sf.javailp.Result;
 
 import java.lang.reflect.Array;
@@ -8,7 +9,7 @@ import java.util.HashMap;
 
 public class ILPResult {
     final Result result;
-    final Number objective;
+    final double objective;
     final double[][] fhat;
     final double[][] u;
     final int nClones;
@@ -18,6 +19,11 @@ public class ILPResult {
     private final HashMap<Integer,Integer> indexToId;
     private final HashMap<Integer,Integer> idToIndex;
     final Tree T;
+    final double term1;
+    final double term2;
+    final double term3;
+    final double term4;
+
 
     public ILPResult(Result res, Instance I, Graph ancestryGraph){
         assert res != null;
@@ -25,7 +31,7 @@ public class ILPResult {
         assert I.nSamples > 0;
 
         this.result = res;
-        this.objective = res.getObjective();
+        this.objective = (double) res.getObjective();
         this.nSamples = I.nSamples;
 
         //find the root by looking at all x_nClones_i
@@ -108,6 +114,58 @@ public class ILPResult {
 
             }
         }
+
+        /*
+        // check to make sure that q_tj = 1 iff u_tj = 0 and j is in the tree
+        int[][] Q = new int[nSamples][nClones];
+        for(t = 0; t < nSamples; t++){
+            for(i = 0; i < nClones; i++) {
+                id = indexToId.get(i);
+                Q[t][i] = (int) result.getPrimalValue("q_" + t + "_" + id);
+                System.out.println(Q[t][i] + " " + u[t][i]);
+            }
+        }
+        */
+
+
+        // print objective function components
+        double term1 = 0;
+        // Add a term for each possible edge in the tree (most mutations)
+        for(i = 0; i < I.nMuts + 1; i++){
+            for(Integer my_j : ancestryGraph.outEdges.get(i)) {
+                term1 += Math.pow(10, Main.PRECISION_DIGITS + 1) * (int) result.getPrimalValue("x_" + i + "_" + my_j);
+            }
+        }
+        this.term1 = term1;
+
+        double term2 = 0;
+        // Add a term for each frequency matrix entry present in sample (prioritize largest CCF mutations)
+        for(t = 0; t < nSamples; t++) {
+            for (i = 0; i < I.nMuts; i++) {
+                term2 += Math.pow(10, Main.PRECISION_DIGITS) * (I.intervals[0][t][i] / ((double) nClones * nSamples)) * (int) result.getPrimalValue("w_" + i);
+            }
+        }
+        this.term2 = term2;
+
+        double term3 = 0;
+        // Add a term for each 0 value in U
+        for(t = 0; t < nSamples; t++) {
+            for (i = 0; i < I.nMuts; i++) {
+                term3 += (1.0 / ((double) nClones * nSamples)) * (int) result.getPrimalValue("q_" + t + "_" + i);
+            }
+        }
+        this.term3 = term3;
+
+        double term4 = 0;
+        if(Main.OBJECTIVE == Main.Objective.L0center){
+            for(t = 0; t < nSamples; t++) {
+                for (i = 0; i < nClones; i++) {
+                    // Add difference term to objective
+                    term4 += -1.0 / ((double) nClones * nSamples * nClones * nSamples) * (double) result.getPrimalValue("d_" + t + "_" + i);
+                }
+            }
+        }
+        this.term4 = term4;
     }
 
     public int totalClonePresence(){
@@ -301,6 +359,14 @@ public class ILPResult {
                 myRowLabels[i] = i + "";
             }
         }
+
+        System.out.println("Objective: ");
+        System.out.println(objective);
+        System.out.println("Terms: ");
+        System.out.println(term1);
+        System.out.println(term2);
+        System.out.println(term3);
+        System.out.println(term4);
 
         b.append("Clone proportion matrix U");
         b.append('\n');

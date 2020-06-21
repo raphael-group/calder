@@ -32,6 +32,7 @@ public class Main {
     static int SOLVER_VERBOSE = 0;
     static int SOLVER_TIMEOUT = 36000;
     static boolean REMOVE_CNA = false;
+    static boolean ENUMERATE_TREES = false;
 
     static boolean COUNT = false; // TODO: explicit option for this
 
@@ -138,7 +139,6 @@ public class Main {
         String tkn = infile_tkns[infile_tkns.length - 1].split("\\.")[0].split("_")[0];
 
         // Write output solution to file tree0
-        int maximal = result.nClones;
         int c = 0;
         if(!COUNT){
             System.out.println("Solution number 1------------------------------------------");
@@ -152,21 +152,42 @@ public class Main {
         if (COUNT){
             MAX_NUM_OPTIMA_OUTPUT = Integer.MAX_VALUE;
         }
-        while(c < MAX_NUM_OPTIMA_OUTPUT){
-            // Add trivial constraint to prohibit returning exactly the same tree
-            extraConstraints.add(Calder.constructDummyConstraint(result, c));
 
-            r = Calder.solve(I, G, extraConstraints);
-            if(r != null && (result = new ILPResult(r, I, G)).T.vertices.size() == maximal) {
-                System.out.println("Solution number " + (c+1) + "------------------------------------------");
-                System.out.println(result);
-                writeSolution(tkn, result, c + 1);
-                c++;
-            } else {
-                System.out.println("No more optima. Found " + c + " optimal trees.");
-                break;
+        if(ENUMERATE_TREES){
+            double maximal = result.nClones;
+            while(c < MAX_NUM_OPTIMA_OUTPUT){
+                // Add trivial constraint to prohibit returning exactly the same tree
+                extraConstraints.add(Calder.constructDummyConstraint(result, c));
+
+                r = Calder.solve(I, G, extraConstraints);
+                if(r != null && (result = new ILPResult(r, I, G)).nClones == maximal) {
+                    System.out.println("Solution number " + (c+1) + "------------------------------------------");
+                    System.out.println(result);
+                    writeSolution(tkn, result, c + 1);
+                    c++;
+                } else {
+                    System.out.println("No more optima. Found " + c + " optimal trees.");
+                    break;
+                }
             }
-        }
+        } else {
+                double maximal = result.objective;
+                while (c < MAX_NUM_OPTIMA_OUTPUT) {
+                    // Add trivial constraint to prohibit returning exactly the same tree
+                    extraConstraints.add(Calder.constructDummyConstraint(result, c));
+
+                    r = Calder.solve(I, G, extraConstraints);
+                    if (r != null && (result = new ILPResult(r, I, G)).objective == maximal) {
+                        System.out.println("Solution number " + (c + 1) + "------------------------------------------");
+                        System.out.println(result);
+                        writeSolution(tkn, result, c + 1);
+                        c++;
+                    } else {
+                        System.out.println("No more optima. Found " + c + " optimal trees.");
+                        break;
+                    }
+                }
+            }
 
         ThreadMXBean bean = ManagementFactory.getThreadMXBean();
         DecimalFormat df = new DecimalFormat();
