@@ -100,6 +100,8 @@ python apply_clustering.py clustering_input.txt cluster_assignments.txt calder_i
     Additional options
     -a,--alpha <arg>       confidence level alpha (default 0.9)
     -c,--printconf         print effective confidence level
+    -e,--enumerate         enumerate all maximal trees instead of just
+                        optimal solutions
     -g,--print-graph       print ancestry graph
     -h,--threshold <arg>   detection threshold h (default 0.01)
     -n,--intervals         print confidence intervals
