@@ -100,6 +100,7 @@ python apply_clustering.py clustering_input.txt cluster_assignments.txt calder_i
     Additional options
     -a,--alpha <arg>       confidence level alpha (default 0.9)
     -c,--printconf         print effective confidence level
+    -d,--details           print detailed values of objective function terms
     -e,--enumerate         enumerate all maximal trees instead of just
                         optimal solutions
     -g,--print-graph       print ancestry graph
