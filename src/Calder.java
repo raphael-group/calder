@@ -458,8 +458,8 @@ public class Calder {
         // Add a term for each frequency matrix entry present in sample (prioritize largest CCF mutations)
         for(t = 0; t < nSamples; t++) {
             for (i = 0; i < nClones; i++) {
-                linear.add(Math.pow(10, Main.PRECISION_DIGITS) * I.intervals[0][t][i] /
-                        ((double) nClones * nSamples), "w_" + i);
+                linear.add(Math.pow(10, Main.PRECISION_DIGITS + 1) * I.intervals[0][t][i] /
+                        ((double) 2 * nClones * nSamples), "w_" + i);
             }
         }
 
@@ -512,8 +512,8 @@ public class Calder {
         // Add a term for each frequency matrix entry present in sample (prioritize largest CCF mutations)
         for(t = 0; t < nSamples; t++) {
             for (i = 0; i < nClones; i++) {
-                linear.add(Math.pow(10, Main.PRECISION_DIGITS) * I.intervals[0][t][i] /
-                        ((double) nClones * nSamples), "w_" + i);
+                linear.add(Math.pow(10, Main.PRECISION_DIGITS + 1) * I.intervals[0][t][i] /
+                        ((double) 2 * nClones * nSamples), "w_" + i);
             }
         }
 

@@ -33,6 +33,7 @@ public class Main {
     static int SOLVER_TIMEOUT = 36000;
     static boolean REMOVE_CNA = false;
     static boolean ENUMERATE_TREES = false;
+    static boolean PRINT_OBJECTIVE_DETAILS = false;
 
     static boolean COUNT = false; // TODO: explicit option for this
 

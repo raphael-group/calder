@@ -23,6 +23,10 @@ public class ILPResult {
     final double term2;
     final double term3;
     final double term4;
+    final int term1_unnorm;
+    final double term2_unnorm;
+    final int term3_unnorm;
+    final double term4_unnorm;
 
 
     public ILPResult(Result res, Instance I, Graph ancestryGraph){
@@ -130,42 +134,71 @@ public class ILPResult {
 
         // print objective function components
         double term1 = 0;
+        int term1_unnorm = 0;
+        int intval;
+        double doubval;
         // Add a term for each possible edge in the tree (most mutations)
         for(i = 0; i < I.nMuts + 1; i++){
             for(Integer my_j : ancestryGraph.outEdges.get(i)) {
-                term1 += Math.pow(10, Main.PRECISION_DIGITS + 1) * (int) result.getPrimalValue("x_" + i + "_" + my_j);
+                intval = (int) result.getPrimalValue("x_" + i + "_" + my_j);
+                term1_unnorm += intval;
+                term1 += Math.pow(10, Main.PRECISION_DIGITS + 1) * intval;
             }
         }
-        this.term1 = term1;
 
         double term2 = 0;
+        double term2_unnorm = 0;
         // Add a term for each frequency matrix entry present in sample (prioritize largest CCF mutations)
         for(t = 0; t < nSamples; t++) {
             for (i = 0; i < I.nMuts; i++) {
-                term2 += Math.pow(10, Main.PRECISION_DIGITS) * (I.intervals[0][t][i] / ((double) nClones * nSamples)) * (int) result.getPrimalValue("w_" + i);
+                doubval =  (int) result.getPrimalValue("w_" + i) * I.intervals[0][t][i];
+                term2_unnorm += doubval;
+                term2 += (Math.pow(10, Main.PRECISION_DIGITS + 1) / ((double) 2 * nClones * nSamples)) * doubval;
             }
         }
-        this.term2 = term2;
 
         double term3 = 0;
+        int term3_unnorm = 0;
         // Add a term for each 0 value in U
         for(t = 0; t < nSamples; t++) {
             for (i = 0; i < I.nMuts; i++) {
-                term3 += (1.0 / ((double) nClones * nSamples)) * (int) result.getPrimalValue("q_" + t + "_" + i);
+                intval = (int) result.getPrimalValue("q_" + t + "_" + i);
+                term3_unnorm += intval;
+                term3 += (1.0 / ((double) nClones * nSamples)) * intval;
             }
         }
-        this.term3 = term3;
+        term3_unnorm = nClones * nSamples - term3_unnorm;
 
         double term4 = 0;
+        double term4_unnorm = 0;
         if(Main.OBJECTIVE == Main.Objective.L0center){
             for(t = 0; t < nSamples; t++) {
                 for (i = 0; i < nClones; i++) {
-                    // Add difference term to objective
-                    term4 += -1.0 / ((double) nClones * nSamples * nClones * nSamples) * (double) result.getPrimalValue("d_" + t + "_" + i);
+                    doubval = (double) result.getPrimalValue("d_" + t + "_" + i);
+                    // TODO: check correspondence between the variable and the difference
+                    term4_unnorm += doubval;
+                    term4 += -1.0 / ((double) nClones * nSamples * nClones * nSamples) * doubval;
+                }
+            }
+        } else {
+            for(t = 0; t < nSamples; t++) {
+                for (i = 0; i < nClones; i++) {
+                    id = indexToId.get(i);
+                    doubval = Math.abs(fhat[t][id] - I.fbar[t][i]);
+                    term4_unnorm += doubval;
+                    term4 += -1.0 / ((double) nClones * nSamples * nClones * nSamples) * doubval;
                 }
             }
         }
+        this.term1 = term1;
+        this.term2 = term2;
+        this.term3 = term3;
         this.term4 = term4;
+
+        this.term1_unnorm = term1_unnorm;
+        this.term2_unnorm = term2_unnorm;
+        this.term3_unnorm = term3_unnorm;
+        this.term4_unnorm = term4_unnorm;
     }
 
     public int totalClonePresence(){
@@ -360,13 +393,28 @@ public class ILPResult {
             }
         }
 
-        System.out.println("Objective: ");
-        System.out.println(objective);
-        System.out.println("Terms: ");
-        System.out.println(term1);
-        System.out.println(term2);
-        System.out.println(term3);
-        System.out.println(term4);
+        if(Main.PRINT_OBJECTIVE_DETAILS){
+            System.out.println("Objective: ");
+            System.out.println(objective);
+            System.out.println("Terms: ");
+            System.out.println(term1);
+            System.out.println(term2);
+            System.out.println(term3);
+            System.out.println(term4);
+
+            System.out.println("Un-normalized terms:");
+            System.out.println("Number of edges = " + term1_unnorm);
+            System.out.println("Total F- for included mutations = " + term2_unnorm);
+            System.out.println("||U||_0 = " + term3_unnorm);
+
+            if(Main.OBJECTIVE == Main.Objective.L0center){
+                System.out.println("|Fbar - Fhat| = " + term4_unnorm);
+            } else {
+                System.out.println("|Fbar - Fhat| = " + term4_unnorm + " *not used in objective");
+            }
+            System.out.println();
+        }
+
 
         b.append("Clone proportion matrix U");
         b.append('\n');

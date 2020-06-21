@@ -67,6 +67,10 @@ public class JarMain {
         enumerateTrees.setRequired(false);
         options.addOption(enumerateTrees);
 
+        Option details = new Option("d", "details", false, "print detailed values of objective function terms");
+        details.setRequired(false);
+        options.addOption(details);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = null;
@@ -171,6 +175,7 @@ public class JarMain {
             Main.LONGITUDINAL = !cmd.hasOption("nonlongitudinal");
             Main.REMOVE_CNA = cmd.hasOption("remove-columns");
             Main.ENUMERATE_TREES = cmd.hasOption("enumerate");
+            Main.PRINT_OBJECTIVE_DETAILS = cmd.hasOption("details");
 
         } catch(NumberFormatException e){
             System.out.println(e.getMessage());
