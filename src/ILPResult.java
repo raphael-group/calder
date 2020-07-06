@@ -184,7 +184,7 @@ public class ILPResult {
             for(t = 0; t < nSamples; t++) {
                 for (i = 0; i < nClones; i++) {
                     id = indexToId.get(i);
-                    doubval = Math.abs(fhat[t][id] - I.fbar[t][i]);
+                    doubval = Math.abs(fhat[t][i] - I.fbar[t][id]);
                     term4_unnorm += doubval;
                     term4 += -1.0 / ((double) nClones * nSamples * nClones * nSamples) * doubval;
                 }
@@ -396,6 +396,10 @@ public class ILPResult {
         if(Main.PRINT_OBJECTIVE_DETAILS){
             System.out.println("Objective: ");
             System.out.println(objective);
+
+            //System.out.println("Objective without last term:");
+            //System.out.println(term1 + term2 + term3);
+
             System.out.println("Terms: ");
             System.out.println(term1);
             System.out.println(term2);

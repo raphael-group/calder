@@ -71,6 +71,10 @@ public class JarMain {
         details.setRequired(false);
         options.addOption(details);
 
+        Option min_total_usage = new Option("m", "min-total", true, "minimum total clone proportion across all samples (default 0)");
+        min_total_usage.setRequired(false);
+        options.addOption(min_total_usage);
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = null;
@@ -164,6 +168,20 @@ public class JarMain {
                     Main.SOLVER_TIMEOUT = timeout;
                 } catch(NumberFormatException e){
                     System.out.println("Solver timeout must be a positive integer.");
+                    System.exit(1);
+                }
+            }
+
+            if(cmd.hasOption("min-total")){
+                double minusage;
+                try{
+                    minusage = Double.parseDouble(cmd.getOptionValue("min-total"));
+                    if (minusage < 0){
+                        throw new NumberFormatException();
+                    }
+                    Main.MIN_TOTAL_USAGE = minusage;
+                } catch(NumberFormatException e){
+                    System.out.println("Minimum total usage must be non-negative.");
                     System.exit(1);
                 }
             }

@@ -34,6 +34,7 @@ public class Main {
     static boolean REMOVE_CNA = false;
     static boolean ENUMERATE_TREES = false;
     static boolean PRINT_OBJECTIVE_DETAILS = false;
+    static double MIN_TOTAL_USAGE = 0.0;
 
     static boolean COUNT = false; // TODO: explicit option for this
 
@@ -119,7 +120,13 @@ public class Main {
         Result r = Calder.solve(I, G);
 
         // construct an ILPResult object which unpacks the ILP variables
-        ILPResult result = new ILPResult(r, I, G);
+        ILPResult result = null;
+        try {
+            result = new ILPResult(r, I, G);
+        } catch (NullPointerException e){
+            System.out.println("CALDER found no solutions with the given data and parameters.");
+            System.exit(0);
+        }
 
         int total = 1; // 1 edge incoming to root
         for(int i = 0; i < I.nMuts; i++){

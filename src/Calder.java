@@ -323,6 +323,17 @@ public class Calder {
             }
         }
 
+        // The sum of values in U across clones and samples must be at least MIN_TOTAL_USAGE
+        linear = new Linear();
+        for(t = 0; t < nSamples; t++){
+            for(i = 0; i < nMuts; i++){
+                linear.add(1, "b_" + t + "_" + i);
+            }
+        }
+        problem.add(new Constraint("constraint" + counter++, linear, ">=", Main.MIN_TOTAL_USAGE));
+
+
+
         if (Main.LONGITUDINAL){
             // lineage continuity: x_ij * tmin_j <= tmax_i
             for(i = 0; i < nMuts; i++){
