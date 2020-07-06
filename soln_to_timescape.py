@@ -102,8 +102,6 @@ def write_timescape(U, tree_dict, stem):
             rows.append(newrow)
     
     with open(stem + "_prev.txt", "w") as f:
-        f.write("\t".join(['source', 'target']))
-
         for outrow in rows[:-1]:
             f.write("\t".join(outrow) + os.linesep)
         f.write('\t'.join(rows[-1]))
