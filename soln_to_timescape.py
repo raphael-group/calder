@@ -43,7 +43,7 @@ def parse_dot(dot_fname):
     tree = nx.drawing.nx_pydot.read_dot(dot_fname)
 
     # Extract vertex labels
-    vertex_labels = {k:tree.nodes[k]['label'].strip("\"") for k in tree.nodes}
+    vertex_labels = {k:tree.nodes[k]['label'].strip("\"") for k in tree.nodes if ('\\n' not in k and '\n' not in k)}
 
     # Initialize tree dictionary using vertex labels
     # {source1: [destination1, destination2, ...], source2: [...], ...}
